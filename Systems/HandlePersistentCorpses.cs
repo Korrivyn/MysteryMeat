@@ -1,87 +1,66 @@
-﻿using Kitchen;
+using Kitchen;
 using KitchenData;
 using KitchenLib.Utils;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
-using KitchenMysteryMeat.Customs.Appliances;
-using KitchenMysteryMeat.Customs.Items;
-using Sony.NP;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
-using UnityEngine.UIElements;
 
 namespace KitchenMysteryMeat.Systems
 {
-    public class HandlePersistentCorpses : StartOfDaySystem, IModSystem
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    public partial class HandleOvernightCorpses : SystemBase, IModSystem
     {
-        EntityQuery Illegals;
+        private EndSimulationEntityCommandBufferSystem _endEcbSystem;
 
-        protected override void Initialise()
+        protected override void OnCreate()
         {
-            base.Initialise();
-
-            Illegals = GetEntityQuery(new QueryHelper()
-                            .All(typeof(CIllegalSight))
-                            .Any(typeof(CItem), typeof(CAppliance)));
+            base.OnCreate();
+            _endEcbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnUpdate()
         {
-            if (!HasStatus((RestaurantStatus)VariousUtils.GetID("persistentcorpses")))
-                return;
+            var ecb = _endEcbSystem.CreateCommandBuffer().AsParallelWriter();
 
-            using NativeArray<Entity> _illegals = Illegals.ToEntityArray(Allocator.Temp);
+            bool persistent = HasStatus((RestaurantStatus)VariousUtils.GetID("persistentcorpses"));
 
-            for (int i = _illegals.Length - 1; i >= 0; i--)
-            {
-                Entity illegalEntity = _illegals[i];
-                CIllegalSight illegalSight = GetComponent<CIllegalSight>(illegalEntity);
-
-                if (!GameData.Main.TryGet(illegalSight.TurnIntoOnDayStart, out Appliance _, false) &&
-                    !GameData.Main.TryGet(illegalSight.TurnIntoOnDayStart, out Item _, false))
-                    continue;
-
-                if (Require<CItem>(illegalEntity, out var cItem) && 
-                    Require<CHeldBy>(illegalEntity, out var holder) && 
-                    !Has<CPreservesContentsOvernight>(holder)) // This makes sure the body doesn't get converted if in a freezer
+            Entities
+                .WithName("HandleOvernightCorpses_Safe")
+                .WithAll<CIllegalSight>()
+                .ForEach((Entity entity, int entityInQueryIndex) =>
                 {
-                    // Turn into illegalSight.TurnIntoOnDayStart
-                    Set(illegalEntity, new CChangeItemType()
+                    if (HasComponent<CItem>(entity))
                     {
-                        NewID = illegalSight.TurnIntoOnDayStart,
-                    });
-
-                    if (Require<CSplittableItem>(illegalEntity, out var cSplittableItem))
-                    {
-                        Set<CPersistPortions>(illegalEntity, new CPersistPortions()
+                        if (persistent)
                         {
-                            RemainingCount = cSplittableItem.RemainingCount,
-                            TotalCount = cSplittableItem.TotalCount,
-                        });
-                    }
-                }
-                else if (Require<CAppliance>(illegalEntity, out var cAppliance))
-                {
-                    // Turn into illegalSight.TurnIntoOnDayStart
-                    if (Require<CPosition>(illegalEntity, out var cPosition))
-                    {
-                        Entity corpse = EntityManager.CreateEntity();
-                        Set<CCreateAppliance>(corpse, new CCreateAppliance
+                            if (!HasComponent<CPreservedOvernight>(entity))
+                                ecb.AddComponent<CPreservedOvernight>(entityInQueryIndex, entity);
+                        }
+                        else
                         {
-                            ID = illegalSight.TurnIntoOnDayStart,
-                            ForceLayer = OccupancyLayer.Ceiling
-                        });
-                        Set<CPosition>(corpse, new CPosition(cPosition.Position, cPosition.Rotation));
-
-                        EntityManager.DestroyEntity(illegalEntity);
+                            if (HasComponent<CPreservedOvernight>(entity))
+                                ecb.RemoveComponent<CPreservedOvernight>(entityInQueryIndex, entity);
+                        }
                     }
-                }
-            }
+
+                    if (HasComponent<CAppliance>(entity))
+                    {
+                        if (persistent)
+                        {
+                            if (HasComponent<CDestroyApplianceAtNight>(entity))
+                                ecb.RemoveComponent<CDestroyApplianceAtNight>(entityInQueryIndex, entity);
+                        }
+                        else
+                        {
+                            if (!HasComponent<CDestroyApplianceAtNight>(entity))
+                                ecb.AddComponent<CDestroyApplianceAtNight>(entityInQueryIndex, entity);
+                        }
+                    }
+                })
+                .ScheduleParallel();
+
+            _endEcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }
