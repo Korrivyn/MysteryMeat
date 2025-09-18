@@ -26,7 +26,7 @@ namespace KitchenMysteryMeat.Systems
             bool persistent = HasStatus((RestaurantStatus)VariousUtils.GetID("persistentcorpses"));
 
             Entities
-                .WithName("HandleOvernightCorpses_Safe")
+                .WithName("HandleOvernightCorpses")
                 .WithAll<CIllegalSight>()
                 .ForEach((Entity entity, int entityInQueryIndex) =>
                 {
