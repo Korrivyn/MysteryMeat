@@ -1,61 +1,66 @@
-﻿using Kitchen;
+using Kitchen;
 using KitchenData;
 using KitchenLib.Utils;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems
 {
-    public class HandleOvernightCorpses : GameSystemBase, IModSystem
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    public partial class HandleOvernightCorpses : SystemBase, IModSystem
     {
-        EntityQuery Illegals;
+        private EndSimulationEntityCommandBufferSystem _endEcbSystem;
 
-        protected override void Initialise()
+        protected override void OnCreate()
         {
-            base.Initialise();
-
-            Illegals = GetEntityQuery(new QueryHelper()
-                            .All(typeof(CIllegalSight))
-                            .Any(typeof(CItem), typeof(CAppliance)));
+            base.OnCreate();
+            _endEcbSystem = World.GetOrCreateSystem<EndSimulationEntityCommandBufferSystem>();
         }
 
         protected override void OnUpdate()
         {
-            bool statusFound = HasStatus((RestaurantStatus)VariousUtils.GetID("persistentcorpses"));
+            var ecb = _endEcbSystem.CreateCommandBuffer().AsParallelWriter();
 
-            using NativeArray<Entity> _illegals = Illegals.ToEntityArray(Allocator.Temp);
+            bool persistent = HasStatus((RestaurantStatus)VariousUtils.GetID("persistentcorpses"));
 
-            for (int i = _illegals.Length - 1; i >= 0; i--)
-            {
-                Entity illegalEntity = _illegals[i];
-                CIllegalSight illegalSight = GetComponent<CIllegalSight>(illegalEntity);
-
-                if (!GameData.Main.TryGet(illegalSight.TurnIntoOnDayStart, out Appliance _, false) &&
-                    !GameData.Main.TryGet(illegalSight.TurnIntoOnDayStart, out Item _, false))
-                    continue;
-
-                if (Require<CItem>(illegalEntity, out var _cItem))
+            Entities
+                .WithName("HandleOvernightCorpses_Safe")
+                .WithAll<CIllegalSight>()
+                .ForEach((Entity entity, int entityInQueryIndex) =>
                 {
-                    if (statusFound)
-                        Set(illegalEntity, new CPreservedOvernight());
-                    else if (Has<CPreservedOvernight>(illegalEntity))
-                        EntityManager.RemoveComponent<CPreservedOvernight>(illegalEntity);
-                }
-                else if (Require<CAppliance>(illegalEntity, out var _cAppliance))
-                {
-                    if (statusFound)
-                        EntityManager.RemoveComponent<CDestroyApplianceAtNight>(illegalEntity);
-                    else
-                        Set(illegalEntity, new CDestroyApplianceAtNight());
-                }
-            }
+                    if (HasComponent<CItem>(entity))
+                    {
+                        if (persistent)
+                        {
+                            if (!HasComponent<CPreservedOvernight>(entity))
+                                ecb.AddComponent<CPreservedOvernight>(entityInQueryIndex, entity);
+                        }
+                        else
+                        {
+                            if (HasComponent<CPreservedOvernight>(entity))
+                                ecb.RemoveComponent<CPreservedOvernight>(entityInQueryIndex, entity);
+                        }
+                    }
+
+                    if (HasComponent<CAppliance>(entity))
+                    {
+                        if (persistent)
+                        {
+                            if (HasComponent<CDestroyApplianceAtNight>(entity))
+                                ecb.RemoveComponent<CDestroyApplianceAtNight>(entityInQueryIndex, entity);
+                        }
+                        else
+                        {
+                            if (!HasComponent<CDestroyApplianceAtNight>(entity))
+                                ecb.AddComponent<CDestroyApplianceAtNight>(entityInQueryIndex, entity);
+                        }
+                    }
+                })
+                .ScheduleParallel();
+
+            _endEcbSystem.AddJobHandleForProducer(Dependency);
         }
     }
 }
