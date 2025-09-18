@@ -29,7 +29,7 @@ namespace KitchenMysteryMeat.Systems
             var gameData = GameData.Main;
 
             Entities
-                .WithName("HandlePersistentCorpses_Safe")
+                .WithName("HandlePersistentCorpses")
                 .WithAll<CIllegalSight>()
                 .ForEach((Entity entity, int entityInQueryIndex, in CIllegalSight illegalSight) =>
                 {
