@@ -11,13 +11,8 @@
 	<!-- This is the section you need to add for external file references -->
 	<ItemGroup>
 		<!-- PlateUp! Core DLLs for v1.2.1+ -->
-
-		<!-- Mod Dependency: KitchenLib -->
 		<Reference Include="Kitchen.Common">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.Common.dll</HintPath>
-		</Reference>
-		<Reference Include="KitchenLib">
-			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898069883\KitchenLib-Workshop.dll</HintPath>
 		</Reference>
 		<Reference Include="KitchenMods">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMods.dll</HintPath>
@@ -44,7 +39,12 @@
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.UI.dll</HintPath>
 		</Reference>
 		<Reference Include="HarmonyLib">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\HarmonyLib.dll</HintPath>
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\0HarmonyLib.dll</HintPath>
+		</Reference>
+		
+		<!-- Mod Dependencies: KitchenLib & PreferenceSystem -->
+		<Reference Include="KitchenLib">
+			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898069883\KitchenLib-Workshop.dll</HintPath>
 		</Reference>
 		<Reference Include="PreferenceSystem">
 		  <HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2847087562\PreferenceSystem-Workshop.dll</HintPath>
