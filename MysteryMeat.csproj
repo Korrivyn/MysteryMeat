@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>net48</TargetFramework>
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
@@ -37,17 +37,20 @@
 		</Reference>
 		<Reference Include="UnityEngine.UI">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.UI.dll</HintPath>
-		</Reference>
-		<Reference Include="HarmonyLib">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\0HarmonyLib.dll</HintPath>
-		</Reference>
+		</Reference>	
 		
 		<!-- Mod Dependencies: KitchenLib & PreferenceSystem -->
+		<Reference Include="0Harmony">
+		  <HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898033283\0Harmony.dll</HintPath>
+		</Reference>
+		<Reference Include="KitchenPlatePatch">
+			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\3306089551\KitchenPlatePatch.dll</HintPath>
+		</Reference>
 		<Reference Include="KitchenLib">
 			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898069883\KitchenLib-Workshop.dll</HintPath>
 		</Reference>
-		<Reference Include="PreferenceSystem">
-		  <HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2847087562\PreferenceSystem-Workshop.dll</HintPath>
+		<Reference Include="PreferenceSystem-Workshop">
+			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2949018507\PreferenceSystem-Workshop.dll</HintPath>
 		</Reference>
 	</ItemGroup>
 
