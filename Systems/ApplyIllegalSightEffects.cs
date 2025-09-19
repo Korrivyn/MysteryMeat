@@ -1,4 +1,4 @@
-﻿// Systems/ApplyIllegalSightEffects.cs
+// Systems/ApplyIllegalSightEffects.cs
 // Invoker system: replaces the legacy StartOfDay/Overnight systems by invoking the new effect-style logic
 // without using GameData or other legacy global lookups. This uses EntityContext (modern) which is used
 // elsewhere in the project (see KillCustomers.cs).
@@ -40,17 +40,18 @@ namespace KitchenMysteryMeat.Systems
                         // Create an EntityContext backed by the project's EntityManager
                         EntityContext ctx = new EntityContext(EntityManager);
 
-                        // For each illegal entity, apply transform or replacement using the Effect classes above
-                        var transformEffect = new Effect_TransformCorpse();
-                        var replaceEffect = new Effect_ReplaceWithAppliance();
-
                         for (int i = illegals.Length - 1; i >= 0; --i)
                         {
                             Entity e = illegals[i];
 
-                            // If the entity is an item or appliance, apply transformEffect which handles both cases.
-                            // transformEffect will internally check for CItem/CAppliance/CPosition and do the right thing.
-                            transformEffect.Apply(ctx, e);
+                            if (ctx.Has<CItem>(e))
+                            {
+                                CorpseEffects.TransformCorpse(ctx, e);
+                            }
+                            else if (ctx.Has<CAppliance>(e))
+                            {
+                                CorpseEffects.ReplaceWithAppliance(ctx, e);
+                            }
                         }
                     }
                 }

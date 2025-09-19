@@ -1,28 +1,24 @@
-﻿// Systems/Effects/Effect_ReplaceWithAppliance.cs
-// Effect that replaces the current entity with the appliance ID stored in the entity's CIllegalSight.
+// Systems/Effects/Effect_ReplaceWithAppliance.cs
+// Static helper that replaces the current entity with the appliance ID stored in the entity's CIllegalSight.
 // Useful for overnight replacements.
 
 using Kitchen;
-using KitchenMods;
-using KitchenLib.Customs;
 using KitchenMysteryMeat.Components;
-using System.Reflection;
 using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems.Effects
 {
-    public class Effect_ReplaceWithAppliance : Effect, IEffect
+    public static partial class CorpseEffects
     {
-        public override void Apply(EntityContext ctx, Entity entity)
+        public static void ReplaceWithAppliance(EntityContext ctx, Entity entity)
         {
             if (!ctx.Has<CIllegalSight>(entity))
                 return;
 
-            var illegal = ctx.Get<CIllegalSight>(entity);
-
-            if (!ctx.Has<CPosition>(entity))
+            if (!ctx.Has<CAppliance>(entity) || !ctx.Has<CPosition>(entity))
                 return;
 
+            var illegal = ctx.Get<CIllegalSight>(entity);
             var pos = ctx.Get<CPosition>(entity);
 
             // Create new appliance entity
