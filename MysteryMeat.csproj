@@ -1,20 +1,38 @@
-<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFramework>net472</TargetFramework>
+		<TargetFramework>net48</TargetFramework>
 		<AssemblyName>$(MSBuildProjectName)</AssemblyName>
 		<AssetBundlePath>UnityProject - MysteryMeat\content\mod.assets</AssetBundlePath>
 		<RootNamespace>Kitchen$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 		<LangVersion>latest</LangVersion>
+		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
+	<!-- This is the section you need to add for external file references -->
 	<ItemGroup>
-		<PackageReference Include="Yariazen.PlateUp.ModBuildUtilities" Version="1.11.5" />
+		<!-- PlateUp! Core DLLs for v1.2.1+ -->
+
+		<!-- Mod Dependency: KitchenLib -->
+		<Reference Include="Kitchen.Common">
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.Common.dll</HintPath>
+		</Reference>
+		<Reference Include="KitchenLib">
+			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898069883\KitchenLib-Workshop.dll</HintPath>
+		</Reference>
+		<Reference Include="KitchenMods">
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMods.dll</HintPath>
+		</Reference>
+		<Reference Include="Unity.Entities">
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Entities.dll</HintPath>
+		</Reference>
+		<Reference Include="UnityEngine.CoreModule">
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+		</Reference>
 	</ItemGroup>
-	
+
 	<ItemGroup>
-	  <Compile Remove="UnityProject - MysteryMeat\**" />
-	  <None Remove="UnityProject - MysteryMeat\**" />
+		<Compile Remove="UnityProject - MysteryMeat\**" />
+		<None Remove="UnityProject - MysteryMeat\**" />
 	</ItemGroup>
 
 	<ItemGroup>
