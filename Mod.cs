@@ -24,7 +24,7 @@ namespace KitchenMysteryMeat
     {
         public const string MOD_GUID = "com.quackandcheese.mysterymeat";
         public const string MOD_NAME = "Mystery Meat";
-        public static readonly Version ModVersion = new Version(0, 3, 0);
+        public static new readonly Version ModVersion = new Version(0, 3, 0);
         public static string ModVersionString => ModVersion.ToString();
         public const string MOD_AUTHOR = "QuackAndCheese";
         public const string MOD_GAMEVERSION = ">=1.1.9";
