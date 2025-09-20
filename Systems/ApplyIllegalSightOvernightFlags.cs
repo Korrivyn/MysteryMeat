@@ -33,6 +33,10 @@ namespace KitchenMysteryMeat.Systems
             for (int i = 0; i < illegals.Length; ++i)
             {
                 Entity entity = illegals[i];
+                CIllegalSight illegal = EntityManager.GetComponentData<CIllegalSight>(entity);
+
+                if (illegal.TurnIntoOnDayStart <= 0)
+                    continue;
 
                 if (EntityManager.HasComponent<CItem>(entity))
                 {
