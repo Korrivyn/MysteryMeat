@@ -51,28 +51,27 @@ namespace KitchenMysteryMeat.Systems
                 {
                     // Run away and make into alert indicator
 
-                    // Remove customer from group
+                    // Remove customer orders but leave them in the group so they continue to count as present
                     if (Require<CBelongsToGroup>(customer, out CBelongsToGroup cBelongsToGroup) && RequireBuffer<CGroupMember>(cBelongsToGroup.Group, out DynamicBuffer<CGroupMember> groupMembers))
                     {
-                        // Remove from customer group
-                        int targetedIndex = 0;
+                        // Find the alerted customer's index within the group without removing them from the buffer
+                        int targetedIndex = -1;
                         for (int j = groupMembers.Length - 1; j > -1; j--)
                         {
                             if (groupMembers[j].Customer != customer)
                                 continue;
-                            groupMembers.RemoveAt(j);
                             targetedIndex = j;
                             break;
                         }
-                        // Remove from orders
-                        if (RequireBuffer<CWaitingForItem>(cBelongsToGroup.Group, out DynamicBuffer<CWaitingForItem> waitingForItems))
+
+                        // Remove any outstanding orders linked to the fleeing customer so staff stop trying to serve them
+                        if (targetedIndex >= 0 && RequireBuffer<CWaitingForItem>(cBelongsToGroup.Group, out DynamicBuffer<CWaitingForItem> waitingForItems))
                         {
                             for (int j = waitingForItems.Length - 1; j > -1; j--)
                             {
                                 if (waitingForItems[j].MemberIndex != targetedIndex)
                                     continue;
                                 waitingForItems.RemoveAt(j);
-                                break;
                             }
                         }
                     }
