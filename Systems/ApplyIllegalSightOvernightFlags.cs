@@ -14,6 +14,7 @@ namespace KitchenMysteryMeat.Systems
     {
         private EntityQuery IllegalSightEntities;
         private EntityQuery TemporarilyPreservingHolders;
+        private EntityQuery ItemHolderEntities;
 
         private static HashSet<int> CorpseItemIDs;
 
@@ -31,12 +32,19 @@ namespace KitchenMysteryMeat.Systems
                 All = new[] { ComponentType.ReadOnly<CPersistentCorpseHolder>() }
             });
 
+            ItemHolderEntities = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new[] { ComponentType.ReadOnly<CItemHolder>() }
+            });
+
             EnsureCorpseIDCache();
         }
 
         protected override void OnUpdate()
         {
             bool persistentCorpsesActive = HasStatus((RestaurantStatus)VariousUtils.GetID("persistentcorpses"));
+
+            Dictionary<Entity, Entity> heldItemLookup = BuildHeldItemLookup();
 
             using NativeArray<Entity> illegalSightItems = IllegalSightEntities.ToEntityArray(Allocator.Temp);
             // Track appliances that we grant temporary preservation to this frame so that the
@@ -52,7 +60,7 @@ namespace KitchenMysteryMeat.Systems
                 bool isCorpseItem = IsCorpseItem(illegalEntity);
                 if (isCorpseItem)
                 {
-                    HandleCorpseItem(illegalEntity, persistentCorpsesActive, holdersReceivingTemporaryPreservation, holderBuffer);
+                    HandleCorpseItem(illegalEntity, persistentCorpsesActive, holdersReceivingTemporaryPreservation, holderBuffer, heldItemLookup);
                 }
                 else if (EntityManager.HasComponent<CPersistentCorpseItem>(illegalEntity))
                 {
@@ -82,7 +90,12 @@ namespace KitchenMysteryMeat.Systems
             ReconcileTemporaryHolderFlags(persistentCorpsesActive, holdersReceivingTemporaryPreservation);
         }
 
-        private void HandleCorpseItem(Entity corpseEntity, bool persistentActive, HashSet<Entity> holdersReceivingTemporaryPreservation, List<Entity> holderBuffer)
+        private void HandleCorpseItem(
+            Entity corpseEntity,
+            bool persistentActive,
+            HashSet<Entity> holdersReceivingTemporaryPreservation,
+            List<Entity> holderBuffer,
+            Dictionary<Entity, Entity> heldItemLookup)
         {
             if (persistentActive)
             {
@@ -97,7 +110,7 @@ namespace KitchenMysteryMeat.Systems
                     }
                 }
 
-                List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, corpseEntity, holderBuffer);
+                List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, corpseEntity, holderBuffer, heldItemLookup);
                 for (int h = 0; h < holders.Count; h++)
                 {
                     Entity holderEntity = holders[h];
@@ -130,6 +143,27 @@ namespace KitchenMysteryMeat.Systems
                     EntityManager.RemoveComponent<CPreservedOvernight>(corpseEntity);
                 }
             }
+        }
+
+        private Dictionary<Entity, Entity> BuildHeldItemLookup()
+        {
+            Dictionary<Entity, Entity> lookup = new Dictionary<Entity, Entity>();
+
+            using NativeArray<Entity> holderEntities = ItemHolderEntities.ToEntityArray(Allocator.Temp);
+            using NativeArray<CItemHolder> holderData = ItemHolderEntities.ToComponentDataArray<CItemHolder>(Allocator.Temp);
+
+            for (int i = 0; i < holderEntities.Length && i < holderData.Length; i++)
+            {
+                Entity heldItem = holderData[i].HeldItem;
+                if (heldItem == Entity.Null)
+                {
+                    continue;
+                }
+
+                lookup[heldItem] = holderEntities[i];
+            }
+
+            return lookup;
         }
 
         private bool IsCorpseItem(Entity entity)

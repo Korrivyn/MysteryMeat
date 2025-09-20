@@ -10,10 +10,19 @@ namespace KitchenMysteryMeat.Systems
         private static readonly FieldInfo StoredByFieldInfo = ResolveStoredByFieldInfo();
         private static readonly PropertyInfo StoredByPropertyInfo = ResolveStoredByPropertyInfo();
 
-        internal static List<Entity> CollectHolderEntities(EntityManager entityManager, Entity storedEntity, List<Entity> results)
+        internal static List<Entity> CollectHolderEntities(
+            EntityManager entityManager,
+            Entity storedEntity,
+            List<Entity> results,
+            Dictionary<Entity, Entity> heldItemLookup = null)
         {
             results ??= new List<Entity>(capacity: 2);
             results.Clear();
+
+            if (heldItemLookup != null && heldItemLookup.TryGetValue(storedEntity, out Entity lookupHolder))
+            {
+                TryAddHolder(results, lookupHolder);
+            }
 
             if (entityManager.HasComponent<CHeldBy>(storedEntity))
             {
@@ -31,10 +40,19 @@ namespace KitchenMysteryMeat.Systems
             return results;
         }
 
-        internal static List<Entity> CollectHolderEntities(EntityContext ctx, Entity storedEntity, List<Entity> results)
+        internal static List<Entity> CollectHolderEntities(
+            EntityContext ctx,
+            Entity storedEntity,
+            List<Entity> results,
+            Dictionary<Entity, Entity> heldItemLookup = null)
         {
             results ??= new List<Entity>(capacity: 2);
             results.Clear();
+
+            if (heldItemLookup != null && heldItemLookup.TryGetValue(storedEntity, out Entity lookupHolder))
+            {
+                TryAddHolder(results, lookupHolder);
+            }
 
             if (ctx.Has<CHeldBy>(storedEntity))
             {
