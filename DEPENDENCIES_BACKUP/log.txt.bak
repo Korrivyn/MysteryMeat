@@ -1,4 +1,4 @@
-Build started at 21:41...
+Build started at 20:59...
 1>------ Build started: Project: MysteryMeat, Configuration: Debug x64 ------
 1>Skipping analyzers to speed up the build. You can execute 'Build' or 'Rebuild' command to run analyzers.
 1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Customs\Processes\GrindMeat.cs(26,57,26,61): warning CS0672: Member 'GrindMeat.Info' overrides obsolete member 'CustomLocalisedGameDataObject<Process, ProcessInfo>.Info'. Add the Obsolete attribute to 'GrindMeat.Info'.
@@ -6,4 +6,4 @@ Build started at 21:41...
 1>MysteryMeat -> C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\bin\x64\Debug\net48\MysteryMeat.dll
 1>Done building project "MysteryMeat.csproj".
 ========== Build: 1 succeeded, 0 failed, 0 up-to-date, 0 skipped ==========
-========== Build completed at 21:41 and took 01.242 seconds ==========
+========== Build completed at 20:59 and took 01.029 seconds ==========
