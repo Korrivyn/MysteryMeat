@@ -17,6 +17,7 @@ namespace KitchenMysteryMeat.Systems
     public class EscapedGameOver : GameSystemBase, IModSystem
     {
         EntityQuery Customers;
+        private ComponentType? ReachedDestinationComponentType;
 
         protected override void Initialise()
         {
@@ -24,6 +25,8 @@ namespace KitchenMysteryMeat.Systems
 
             Customers = GetEntityQuery(new QueryHelper()
                             .All(typeof(CPosition), typeof(CCustomer), typeof(CCustomerLeaving), typeof(CAlertedCustomer)));
+
+            ReachedDestinationComponentType = TryGetReachedDestinationComponentType();
         }
 
         protected override void OnUpdate()
@@ -34,10 +37,19 @@ namespace KitchenMysteryMeat.Systems
             {
                 Entity customer = _customers[i];
 
-                CPosition cPosition = EntityManager.GetComponentData<CPosition>(customer);
+                bool hasReachedDestination = false;
+                if (ReachedDestinationComponentType.HasValue)
+                {
+                    hasReachedDestination = EntityManager.HasComponent(customer, ReachedDestinationComponentType.Value);
+                }
+                else
+                {
+                    CPosition cPosition = EntityManager.GetComponentData<CPosition>(customer);
+                    Vector3 leftRestaurantMoveTarget = new Vector3(-15f, 0f, 0f);
+                    hasReachedDestination = Vector3.Magnitude(leftRestaurantMoveTarget - (Vector3)cPosition) < 1f;
+                }
 
-                Vector3 leftRestaurantMoveTarget = new Vector3(-15f, 0f, 0f);
-                if (Vector3.Magnitude((Vector3)leftRestaurantMoveTarget - (Vector3)cPosition) < 1f)
+                if (hasReachedDestination)
                 {
                     // End game if exited
                     EntityManager.CreateEntity(typeof(CLoseLifeEvent));
@@ -45,6 +57,20 @@ namespace KitchenMysteryMeat.Systems
                     break;
                 }
             }
+        }
+
+        private static ComponentType? TryGetReachedDestinationComponentType()
+        {
+            Type type = Type.GetType("Kitchen.CReachedDestination, KitchenMode")
+                ?? Type.GetType("Kitchen.CReachedDestination, KitchenMods")
+                ?? typeof(CMoveToLocation).Assembly.GetType("Kitchen.CReachedDestination");
+
+            if (type == null)
+            {
+                return null;
+            }
+
+            return ComponentType.ReadOnly(type);
         }
     }
 }
