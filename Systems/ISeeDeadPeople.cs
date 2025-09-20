@@ -25,7 +25,7 @@ namespace KitchenMysteryMeat.Systems
             Customers = GetEntityQuery(new QueryHelper()
                             .All(typeof(CCustomer), typeof(CPosition), typeof(CSuspicionIndicator), typeof(CBelongsToGroup))
                             .None(
-                                typeof(CRunningAway)
+                                typeof(CAlertedCustomer)
                             ));
             IllegalEntities = GetEntityQuery(new QueryHelper()
                             .All(typeof(CIllegalSight)));

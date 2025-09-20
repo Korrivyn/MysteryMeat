@@ -23,7 +23,7 @@ namespace KitchenMysteryMeat.Systems
             base.Initialise();
 
             Customers = GetEntityQuery(new QueryHelper()
-                            .All(typeof(CPosition), typeof(CRunningAway), typeof(CCustomer)));
+                            .All(typeof(CPosition), typeof(CCustomer), typeof(CCustomerLeaving), typeof(CAlertedCustomer)));
         }
 
         protected override void OnUpdate()
