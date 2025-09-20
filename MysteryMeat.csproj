@@ -14,17 +14,20 @@
 		<Reference Include="Kitchen.Common">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.Common.dll</HintPath>
 		</Reference>
-		<Reference Include="KitchenMods">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMods.dll</HintPath>
-		</Reference>
 		<Reference Include="Kitchen.GameData">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.GameData.dll</HintPath>
 		</Reference>
-		<Reference Include="Unity.Entities">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Entities.dll</HintPath>
+		<Reference Include="Kitchen.RestaurantMode">
+			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.RestaurantMode.dll</HintPath>
+		</Reference>
+		<Reference Include="KitchenMods">
+			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMods.dll</HintPath>
 		</Reference>
 		<Reference Include="MessagePack">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\MessagePack.dll</HintPath>
+			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\MessagePack.dll</HintPath>
+		</Reference>
+		<Reference Include="Unity.Entities">
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Entities.dll</HintPath>
 		</Reference>
 		<Reference Include="Unity.TextMeshPro">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.TextMeshPro.dll</HintPath>
