@@ -38,6 +38,9 @@
 		<Reference Include="Unity.Entities">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Entities.dll</HintPath>
 		</Reference>
+		<Reference Include="Unity.Mathematics">
+		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Mathematics.dll</HintPath>
+		</Reference>
 		<Reference Include="Unity.TextMeshPro">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.TextMeshPro.dll</HintPath>
 		</Reference>

@@ -1,18 +1,10 @@
-Build started at 20:31...
+Build started at 20:42...
 1>------ Build started: Project: MysteryMeat, Configuration: Debug x64 ------
 1>Skipping analyzers to speed up the build. You can execute 'Build' or 'Rebuild' command to run analyzers.
 1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Customs\Processes\GrindMeat.cs(26,57,26,61): warning CS0672: Member 'GrindMeat.Info' overrides obsolete member 'CustomLocalisedGameDataObject<Process, ProcessInfo>.Info'. Add the Obsolete attribute to 'GrindMeat.Info'.
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\ApplyIllegalSightEffects.cs(64,46,64,62): error CS0246: The type or namespace name 'RestaurantStatus' could not be found (are you missing a using directive or an assembly reference?)
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\Effects\Effect_ReplaceWithAppliance.cs(29,30,29,44): error CS0103: The name 'OccupancyLayer' does not exist in the current context
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Customs\Appliances\ManualMeatGrinder.cs(83,73,83,81): error CS0246: The type or namespace name 'Animator' could not be found (are you missing a using directive or an assembly reference?)
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\KillCustomers.cs(86,30,86,44): error CS0103: The name 'OccupancyLayer' does not exist in the current context
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\KillCustomers.cs(88,84,88,92): error CS0012: The type 'quaternion' is defined in an assembly that is not referenced. You must add a reference to assembly 'Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\KillCustomers.cs(88,54,88,72): error CS1503: Argument 1: cannot convert from 'UnityEngine.Vector3' to 'float'
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\KillCustomers.cs(88,44,88,53): error CS0012: The type 'quaternion' is defined in an assembly that is not referenced. You must add a reference to assembly 'Unity.Mathematics, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null'.
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\KillCustomers.cs(94,45,94,61): error CS0246: The type or namespace name 'RestaurantStatus' could not be found (are you missing a using directive or an assembly reference?)
-1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Systems\KillCustomers.cs(95,45,95,61): error CS0246: The type or namespace name 'RestaurantStatus' could not be found (are you missing a using directive or an assembly reference?)
 1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Customs\Appliances\AutomaticMeatGrinder.cs(86,73,86,81): error CS0246: The type or namespace name 'Animator' could not be found (are you missing a using directive or an assembly reference?)
+1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Customs\Appliances\ManualMeatGrinder.cs(83,73,83,81): error CS0246: The type or namespace name 'Animator' could not be found (are you missing a using directive or an assembly reference?)
 1>C:\Users\Korvi\source\repos\Korrivyn\MysteryMeat\Views\SuspicionIndicatorView.cs(32,29,32,39): warning CS0169: The field 'SuspicionIndicatorView.AlertSound' is never used
 1>Done building project "MysteryMeat.csproj" -- FAILED.
 ========== Build: 0 succeeded, 1 failed, 0 up-to-date, 0 skipped ==========
-========== Build completed at 20:31 and took 00.882 seconds ==========
+========== Build completed at 20:42 and took 00.355 seconds ==========

@@ -3,6 +3,7 @@
 // Useful for overnight replacements.
 
 using Kitchen;
+using KitchenData;
 using KitchenMysteryMeat.Components;
 using Unity.Entities;
 
