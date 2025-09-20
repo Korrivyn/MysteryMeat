@@ -96,12 +96,80 @@ namespace KitchenMysteryMeat.Systems
                         EntityManager.AddComponent<CAlertedCustomer>(customer);
                     }
 
-                    if (Require<CBelongsToGroup>(customer, out CBelongsToGroup alertGroup) && !Has<CGroupStartLeaving>(alertGroup.Group))
+                    if (Require<CBelongsToGroup>(customer, out CBelongsToGroup alertGroup))
                     {
-                        EntityManager.AddComponent<CGroupStartLeaving>(alertGroup.Group);
+                        EnsureGroupLeaves(alertGroup.Group);
                     }
 
                     CSoundEvent.Create(EntityManager, Mod.AlertSoundEvent);
+                }
+            }
+        }
+
+        private void EnsureGroupLeaves(Entity group)
+        {
+            if (group == default)
+            {
+                return;
+            }
+
+            if (!Has<CGroupStartLeaving>(group))
+            {
+                EntityManager.AddComponent<CGroupStartLeaving>(group);
+            }
+
+            if (!Has<CGroupLeaving>(group))
+            {
+                EntityManager.AddComponent<CGroupLeaving>(group);
+            }
+
+            if (!Has<CGroupStateChanged>(group))
+            {
+                EntityManager.AddComponent<CGroupStateChanged>(group);
+            }
+
+            if (Has<CGroupAwaitingOrder>(group))
+            {
+                EntityManager.RemoveComponent<CGroupAwaitingOrder>(group);
+            }
+
+            if (Has<CGroupReadyToOrder>(group))
+            {
+                EntityManager.RemoveComponent<CGroupReadyToOrder>(group);
+            }
+
+            if (Has<CQueuePosition>(group))
+            {
+                EntityManager.RemoveComponent<CQueuePosition>(group);
+            }
+
+            if (Require<CAssignedTable>(group, out CAssignedTable assignedTable) && assignedTable.Table != default)
+            {
+                EntityManager.RemoveComponent<CAssignedTable>(group);
+
+                if (Has<COccupiedByGroup>(assignedTable.Table))
+                {
+                    EntityManager.RemoveComponent<COccupiedByGroup>(assignedTable.Table);
+                }
+            }
+
+            if (Require<CAssignedMenu>(group, out CAssignedMenu assignedMenu) && assignedMenu.Menu != default)
+            {
+                EntityManager.RemoveComponent<CAssignedMenu>(group);
+
+                if (Has<COccupiedByGroup>(assignedMenu.Menu))
+                {
+                    EntityManager.RemoveComponent<COccupiedByGroup>(assignedMenu.Menu);
+                }
+            }
+
+            if (Require<CAssignedStand>(group, out CAssignedStand assignedStand) && assignedStand.Stand != default)
+            {
+                EntityManager.RemoveComponent<CAssignedStand>(group);
+
+                if (Has<COccupiedByGroup>(assignedStand.Stand))
+                {
+                    EntityManager.RemoveComponent<COccupiedByGroup>(assignedStand.Stand);
                 }
             }
         }
