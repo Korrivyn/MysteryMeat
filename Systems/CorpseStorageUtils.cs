@@ -1,4 +1,5 @@
 using Kitchen;
+using KitchenMysteryMeat.Components;
 using System.Collections.Generic;
 using System.Reflection;
 using Unity.Entities;
@@ -38,6 +39,74 @@ namespace KitchenMysteryMeat.Systems
             }
 
             return results;
+        }
+
+        internal static bool AnalyseHolderPreservation(
+            EntityManager entityManager,
+            List<Entity> holders,
+            out bool hasTruePreserver,
+            out bool hasTemporaryPreserver)
+        {
+            hasTruePreserver = false;
+            hasTemporaryPreserver = false;
+
+            if (holders == null || holders.Count == 0)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < holders.Count; i++)
+            {
+                Entity holder = holders[i];
+                if (holder == Entity.Null || !entityManager.Exists(holder))
+                {
+                    continue;
+                }
+
+                if (!entityManager.HasComponent<CPreservesContentsOvernight>(holder))
+                {
+                    continue;
+                }
+
+                if (!entityManager.HasComponent<CPersistentCorpseHolder>(holder))
+                {
+                    hasTruePreserver = true;
+                    continue;
+                }
+
+                hasTemporaryPreserver = true;
+            }
+
+            return hasTruePreserver || hasTemporaryPreserver;
+        }
+
+        internal static void RemoveTemporaryHolderPreservation(EntityManager entityManager, List<Entity> holders)
+        {
+            if (holders == null || holders.Count == 0)
+            {
+                return;
+            }
+
+            for (int i = 0; i < holders.Count; i++)
+            {
+                Entity holder = holders[i];
+                if (holder == Entity.Null || !entityManager.Exists(holder))
+                {
+                    continue;
+                }
+
+                if (!entityManager.HasComponent<CPersistentCorpseHolder>(holder))
+                {
+                    continue;
+                }
+
+                if (entityManager.HasComponent<CPreservesContentsOvernight>(holder))
+                {
+                    entityManager.RemoveComponent<CPreservesContentsOvernight>(holder);
+                }
+
+                entityManager.RemoveComponent<CPersistentCorpseHolder>(holder);
+            }
         }
 
         internal static List<Entity> CollectHolderEntities(

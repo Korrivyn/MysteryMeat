@@ -51,9 +51,21 @@ namespace KitchenMysteryMeat.Systems
 
                         if (ctx.Has<CItem>(e))
                         {
-                            if (ShouldSkipDueToHolderPreservation(e, holderBuffer, heldItemLookup))
+                            List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, e, holderBuffer, heldItemLookup);
+                            bool hasTruePreserver;
+                            bool hasTemporaryPreserver;
+
+                            if (CorpseStorageUtils.AnalyseHolderPreservation(EntityManager, holders, out hasTruePreserver, out hasTemporaryPreserver))
                             {
-                                continue;
+                                if (hasTemporaryPreserver)
+                                {
+                                    CorpseStorageUtils.RemoveTemporaryHolderPreservation(EntityManager, holders);
+                                }
+
+                                if (hasTruePreserver)
+                                {
+                                    continue;
+                                }
                             }
 
                             CorpseEffects.TransformCorpse(ctx, e);
@@ -95,74 +107,5 @@ namespace KitchenMysteryMeat.Systems
             return lookup;
         }
 
-        private bool ShouldSkipDueToHolderPreservation(
-            Entity storedEntity,
-            List<Entity> holderBuffer,
-            Dictionary<Entity, Entity> heldItemLookup)
-        {
-            List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, storedEntity, holderBuffer, heldItemLookup);
-            if (holders.Count == 0)
-            {
-                return false;
-            }
-
-            bool holderProvidesTruePreservation = false;
-            bool hadTemporaryPreserver = false;
-
-            for (int i = 0; i < holders.Count; i++)
-            {
-                Entity holder = holders[i];
-                if (holder == Entity.Null || !EntityManager.Exists(holder))
-                {
-                    continue;
-                }
-
-                if (!EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
-                {
-                    continue;
-                }
-
-                if (!EntityManager.HasComponent<CPersistentCorpseHolder>(holder))
-                {
-                    holderProvidesTruePreservation = true;
-                    break;
-                }
-
-                hadTemporaryPreserver = true;
-            }
-
-            if (holderProvidesTruePreservation)
-            {
-                return true;
-            }
-
-            if (!hadTemporaryPreserver)
-            {
-                return false;
-            }
-
-            for (int i = 0; i < holders.Count; i++)
-            {
-                Entity holder = holders[i];
-                if (holder == Entity.Null || !EntityManager.Exists(holder))
-                {
-                    continue;
-                }
-
-                if (!EntityManager.HasComponent<CPersistentCorpseHolder>(holder))
-                {
-                    continue;
-                }
-
-                if (EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
-                {
-                    EntityManager.RemoveComponent<CPreservesContentsOvernight>(holder);
-                }
-
-                EntityManager.RemoveComponent<CPersistentCorpseHolder>(holder);
-            }
-
-            return false;
-        }
     }
 }
