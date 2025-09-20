@@ -7,6 +7,7 @@ using Kitchen;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Systems.Effects;
+using System.Collections.Generic;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -14,6 +15,18 @@ namespace KitchenMysteryMeat.Systems
 {
     public class ApplyIllegalSightEffects : NightSystem, IModSystem
     {
+        private EntityQuery ItemHolderEntities;
+
+        protected override void Initialise()
+        {
+            base.Initialise();
+
+            ItemHolderEntities = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new[] { ComponentType.ReadOnly<CItemHolder>() }
+            });
+        }
+
         protected override void OnUpdate()
         {
             // Build query of illegal entities
@@ -21,6 +34,9 @@ namespace KitchenMysteryMeat.Systems
             {
                 All = new[] { ComponentType.ReadOnly<CIllegalSight>() }
             });
+
+            Dictionary<Entity, Entity> heldItemLookup = BuildHeldItemLookup();
+            List<Entity> holderBuffer = new List<Entity>(capacity: 2);
 
             using (NativeArray<Entity> illegals = query.ToEntityArray(Allocator.Temp))
             {
@@ -35,6 +51,11 @@ namespace KitchenMysteryMeat.Systems
 
                         if (ctx.Has<CItem>(e))
                         {
+                            if (ShouldSkipDueToHolderPreservation(e, holderBuffer, heldItemLookup))
+                            {
+                                continue;
+                            }
+
                             CorpseEffects.TransformCorpse(ctx, e);
                         }
                         else if (ctx.Has<CAppliance>(e))
@@ -44,6 +65,104 @@ namespace KitchenMysteryMeat.Systems
                     }
                 }
             }
+        }
+
+        private Dictionary<Entity, Entity> BuildHeldItemLookup()
+        {
+            Dictionary<Entity, Entity> lookup = new Dictionary<Entity, Entity>();
+
+            if (ItemHolderEntities == null || ItemHolderEntities.IsEmptyIgnoreFilter)
+            {
+                return lookup;
+            }
+
+            using NativeArray<Entity> holderEntities = ItemHolderEntities.ToEntityArray(Allocator.Temp);
+            using NativeArray<CItemHolder> holderData = ItemHolderEntities.ToComponentDataArray<CItemHolder>(Allocator.Temp);
+
+            int length = holderEntities.Length < holderData.Length ? holderEntities.Length : holderData.Length;
+
+            for (int i = 0; i < length; i++)
+            {
+                Entity heldItem = holderData[i].HeldItem;
+                if (heldItem == Entity.Null)
+                {
+                    continue;
+                }
+
+                lookup[heldItem] = holderEntities[i];
+            }
+
+            return lookup;
+        }
+
+        private bool ShouldSkipDueToHolderPreservation(
+            Entity storedEntity,
+            List<Entity> holderBuffer,
+            Dictionary<Entity, Entity> heldItemLookup)
+        {
+            List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, storedEntity, holderBuffer, heldItemLookup);
+            if (holders.Count == 0)
+            {
+                return false;
+            }
+
+            bool holderProvidesTruePreservation = false;
+            bool hadTemporaryPreserver = false;
+
+            for (int i = 0; i < holders.Count; i++)
+            {
+                Entity holder = holders[i];
+                if (holder == Entity.Null || !EntityManager.Exists(holder))
+                {
+                    continue;
+                }
+
+                if (!EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
+                {
+                    continue;
+                }
+
+                if (!EntityManager.HasComponent<CPersistentCorpseHolder>(holder))
+                {
+                    holderProvidesTruePreservation = true;
+                    break;
+                }
+
+                hadTemporaryPreserver = true;
+            }
+
+            if (holderProvidesTruePreservation)
+            {
+                return true;
+            }
+
+            if (!hadTemporaryPreserver)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < holders.Count; i++)
+            {
+                Entity holder = holders[i];
+                if (holder == Entity.Null || !EntityManager.Exists(holder))
+                {
+                    continue;
+                }
+
+                if (!EntityManager.HasComponent<CPersistentCorpseHolder>(holder))
+                {
+                    continue;
+                }
+
+                if (EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
+                {
+                    EntityManager.RemoveComponent<CPreservesContentsOvernight>(holder);
+                }
+
+                EntityManager.RemoveComponent<CPersistentCorpseHolder>(holder);
+            }
+
+            return false;
         }
     }
 }
