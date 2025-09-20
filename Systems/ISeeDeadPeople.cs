@@ -7,8 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
-using static Unity.Burst.Intrinsics.X86.Avx;
-using UnityEngine.UIElements;
+using UnityEngine.UI;
 using UnityEngine;
 using KitchenMysteryMeat.Components;
 
