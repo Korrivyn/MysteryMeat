@@ -26,11 +26,14 @@ namespace KitchenMysteryMeat.Systems.Effects
             // If item is held, ensure the holder does not preserve contents overnight.
             if (ctx.Has<CHeldBy>(entity))
             {
-                CHeldBy holder = ctx.Get<CHeldBy>(entity);
-                if (holder.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holder.Holder))
+                CHeldBy heldByData = ctx.Get<CHeldBy>(entity);
+                if (heldByData.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(heldByData.Holder))
                 {
-                    // Holder preserves contents — do nothing.
-                    return;
+                    if (!ctx.Has<CPersistentCorpseHolder>(heldByData.Holder))
+                    {
+                        // Holder preserves contents — do nothing.
+                        return;
+                    }
                 }
             }
 
