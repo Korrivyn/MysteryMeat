@@ -20,6 +20,9 @@ namespace KitchenMysteryMeat.Systems.Effects
 
             CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
 
+            if (illegal.TurnIntoOnDayStart <= 0)
+                return;
+
             // If item is held, ensure the holder does not preserve contents overnight.
             if (ctx.Has<CHeldBy>(entity))
             {

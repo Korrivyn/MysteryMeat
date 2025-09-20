@@ -22,6 +22,9 @@ namespace KitchenMysteryMeat.Systems.Effects
             var illegal = ctx.Get<CIllegalSight>(entity);
             var pos = ctx.Get<CPosition>(entity);
 
+            if (illegal.TurnIntoOnDayStart <= 0)
+                return;
+
             // Create new appliance entity
             Entity newEntity = ctx.CreateEntity();
             ctx.Set(newEntity, new CCreateAppliance
