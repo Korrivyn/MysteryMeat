@@ -54,21 +54,51 @@ namespace KitchenMysteryMeat.Views
                 }
             }
 
+            if (AlertClip != null)
+            {
+                if (!AlertSound)
+                {
+                    AlertSound = base.gameObject.AddComponent<SoundSource>();
+                    AlertSound.Configure(SoundCategory.Effects, AlertClip);
+                }
+            }
+
             bool shouldShowIndicator = data.RemainingTime < data.TotalTime || data.IndicatorType == SuspicionIndicatorType.Alert;
             Canvas.SetActive(shouldShowIndicator);
             if (!shouldShowIndicator)
+            {
+                if (SuspicionSound)
+                    SuspicionSound.Stop();
+                if (AlertSound)
+                    AlertSound.Stop();
+                return;
+            }
+
+            bool isAlert = data.IndicatorType == SuspicionIndicatorType.Alert;
+            bool isSuspicious = data.IndicatorType == SuspicionIndicatorType.Suspicious;
+
+            if (!isAlert && AlertSound)
+                AlertSound.Stop();
+
+            if (!isSuspicious && SuspicionSound)
                 SuspicionSound.Stop();
 
 
-            if (data.IndicatorType == SuspicionIndicatorType.Alert) 
+            if (isAlert)
             {
                 // Show Alert Indicator
                 AlertIconParent.SetActive(true);
                 SuspicionIconParent.SetActive(false);
 
-                SuspicionSound.Stop();
+                if (AlertSound)
+                {
+                    if (!AlertSound.IsPlaying || AlertSound.TargetVolume == 0)
+                        AlertSound.Play();
+
+                    AlertSound.VolumeMultiplier = Mod.PrefManager.Get<int>(Mod.SUSPICION_VOLUME_ID) / 100.0f;
+                }
             }
-            else if (data.IndicatorType == SuspicionIndicatorType.Suspicious) 
+            else if (isSuspicious)
             {
                 // Show Sus Indicator
                 SuspicionIconParent.SetActive(true);
@@ -84,7 +114,12 @@ namespace KitchenMysteryMeat.Views
                     SuspicionSound.VolumeMultiplier = SuspicionIconFill.fillAmount * (Mod.PrefManager.Get<int>(Mod.SUSPICION_VOLUME_ID) / 100.0f);
                     SuspicionSound.Pitch = 0.5f + (1.5f * SuspicionIconFill.fillAmount);
                 }
-            }            
+            }
+            else if (AlertIconParent.activeSelf || SuspicionIconParent.activeSelf)
+            {
+                AlertIconParent.SetActive(false);
+                SuspicionIconParent.SetActive(false);
+            }
         }
 
         private void Update()
