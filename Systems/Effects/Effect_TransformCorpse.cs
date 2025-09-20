@@ -1,6 +1,5 @@
 // Systems/Effects/Effect_TransformCorpse.cs
-// Static helper: queues the conversion of an illegal corpse into its TurnIntoOnDayStart item so the
-// actual swap can occur after the overnight phase, allowing the visual to fade during the next day.
+// Static helper: turns an entity that carries CIllegalSight into its configured TurnIntoOnDayStart item.
 // Uses EntityContext (modern API already used in this project) and does not use KitchenData lookups.
 
 using Kitchen;
@@ -11,8 +10,6 @@ namespace KitchenMysteryMeat.Systems.Effects
 {
     public static partial class CorpseEffects
     {
-        internal const float DefaultRotFadeDuration = 1.5f;
-
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
             if (!ctx.Has<CIllegalSight>(entity))
@@ -26,37 +23,32 @@ namespace KitchenMysteryMeat.Systems.Effects
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
 
-            // Queue the rot so the visual can fade into the rotten variant at the start of day.
-            if (ctx.Has<CPendingCorpseRot>(entity))
+            if (ctx.Has<CHeldBy>(entity))
             {
-                CPendingCorpseRot pending = ctx.Get<CPendingCorpseRot>(entity);
-
-                if (pending.TargetItemID <= 0)
+                CHeldBy holder = ctx.Get<CHeldBy>(entity);
+                if (holder.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holder.Holder))
                 {
-                    pending.TargetItemID = illegal.TurnIntoOnDayStart;
+                    if (!ctx.Has<CPersistentCorpseHolder>(holder.Holder))
+                    {
+                        // Holder preserves contents — do nothing.
+                        return;
+                    }
                 }
-
-                if (pending.Duration <= 0f)
-                {
-                    pending.Duration = DefaultRotFadeDuration;
-                }
-
-                if (!pending.PreservePortions && ctx.Has<CSplittableItem>(entity))
-                {
-                    pending.PreservePortions = true;
-                }
-
-                ctx.Set(entity, pending);
-                return;
             }
 
-            ctx.Set(entity, new CPendingCorpseRot
+            // Add the change marker (CChangeItemType) using the modern context API.
+            ctx.Set(entity, new CChangeItemType { NewID = illegal.TurnIntoOnDayStart });
+
+            // Preserve portions if splittable
+            if (ctx.Has<CSplittableItem>(entity))
             {
-                TargetItemID = illegal.TurnIntoOnDayStart,
-                Duration = DefaultRotFadeDuration,
-                Elapsed = 0f,
-                PreservePortions = ctx.Has<CSplittableItem>(entity)
-            });
+                var split = ctx.Get<CSplittableItem>(entity);
+                ctx.Set(entity, new CPersistPortions
+                {
+                    RemainingCount = split.RemainingCount,
+                    TotalCount = split.TotalCount
+                });
+            }
         }
     }
 }

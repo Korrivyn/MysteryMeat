@@ -13,7 +13,7 @@ using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems
 {
-    public class ApplyIllegalSightEffects : NightSystem, IModSystem
+    public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
     {
         private EntityQuery ItemHolderEntities;
 
@@ -52,20 +52,33 @@ namespace KitchenMysteryMeat.Systems
                         if (ctx.Has<CItem>(e))
                         {
                             List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, e, holderBuffer, heldItemLookup);
-                            bool hasTruePreserver;
-                            bool hasTemporaryPreserver;
+                            bool preservedByTrueHolder = false;
 
-                            if (CorpseStorageUtils.AnalyseHolderPreservation(EntityManager, holders, out hasTruePreserver, out hasTemporaryPreserver))
+                            for (int h = 0; h < holders.Count; h++)
                             {
-                                if (hasTemporaryPreserver)
-                                {
-                                    CorpseStorageUtils.RemoveTemporaryHolderPreservation(EntityManager, holders);
-                                }
-
-                                if (hasTruePreserver)
+                                Entity holder = holders[h];
+                                if (holder == Entity.Null || !EntityManager.Exists(holder))
                                 {
                                     continue;
                                 }
+
+                                if (!EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
+                                {
+                                    continue;
+                                }
+
+                                if (EntityManager.HasComponent<CPersistentCorpseHolder>(holder))
+                                {
+                                    continue;
+                                }
+
+                                preservedByTrueHolder = true;
+                                break;
+                            }
+
+                            if (preservedByTrueHolder)
+                            {
+                                continue;
                             }
 
                             CorpseEffects.TransformCorpse(ctx, e);

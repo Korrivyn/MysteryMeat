@@ -5,7 +5,6 @@ using KitchenLib.References;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Appliances;
-using KitchenMysteryMeat.Views;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -67,13 +66,6 @@ namespace KitchenMysteryMeat.Customs.Items
                 view.Setup(Prefab);
             }
 
-            var rotView = Prefab.GetComponent<CorpseRotView>();
-            if (rotView == null)
-            {
-                rotView = Prefab.AddComponent<CorpseRotView>();
-            }
-
-            rotView.Configure(Mod.Bundle.LoadAsset<GameObject>("Rotten Customer Corpse"));
         }
     }
 }
