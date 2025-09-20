@@ -17,9 +17,6 @@
 		<Reference Include="KitchenMods">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMods.dll</HintPath>
 		</Reference>
-		<Reference Include="Kitchen">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.dll</HintPath>
-		</Reference>
 		<Reference Include="Kitchen.GameData">
 		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.GameData.dll</HintPath>
 		</Reference>
