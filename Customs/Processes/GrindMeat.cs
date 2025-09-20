@@ -23,6 +23,7 @@ namespace KitchenMysteryMeat.Customs.Processes
         public override bool CanObfuscateProgress => true;
 
         // The localization information for this process. This must be set for at least one language. 
+        [Obsolete("Use the Fully Loaded localisation APIs.", false)]
         public override LocalisationObject<ProcessInfo> Info
         {
             get
