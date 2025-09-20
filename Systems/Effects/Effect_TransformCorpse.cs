@@ -4,6 +4,8 @@
 
 using Kitchen;
 using KitchenMysteryMeat.Components;
+using KitchenMysteryMeat.Systems;
+using System.Collections.Generic;
 using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems.Effects
@@ -23,17 +25,25 @@ namespace KitchenMysteryMeat.Systems.Effects
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
 
-            // If item is held, ensure the holder does not preserve contents overnight.
-            if (ctx.Has<CHeldBy>(entity))
+            // If the item is stored in a naturally preserving appliance, skip the transform.
+            List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(ctx, entity, null);
+            for (int i = 0; i < holders.Count; i++)
             {
-                CHeldBy heldByData = ctx.Get<CHeldBy>(entity);
-                if (heldByData.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(heldByData.Holder))
+                Entity holder = holders[i];
+                if (holder == Entity.Null)
                 {
-                    if (!ctx.Has<CPersistentCorpseHolder>(heldByData.Holder))
-                    {
-                        // Holder preserves contents — do nothing.
-                        return;
-                    }
+                    continue;
+                }
+
+                if (!ctx.Has<CPreservesContentsOvernight>(holder))
+                {
+                    continue;
+                }
+
+                if (!ctx.Has<CPersistentCorpseHolder>(holder))
+                {
+                    // Holder preserves contents — do nothing.
+                    return;
                 }
             }
 

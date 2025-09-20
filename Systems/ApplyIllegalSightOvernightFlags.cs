@@ -3,8 +3,8 @@ using KitchenData;
 using KitchenLib.Utils;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
+using KitchenMysteryMeat.Customs.Items;
 using System.Collections.Generic;
-using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -15,8 +15,7 @@ namespace KitchenMysteryMeat.Systems
         private EntityQuery IllegalSightEntities;
         private EntityQuery TemporarilyPreservingHolders;
 
-        private static readonly FieldInfo StoredByFieldInfo = ResolveStoredByFieldInfo();
-        private static readonly PropertyInfo StoredByPropertyInfo = ResolveStoredByPropertyInfo();
+        private static HashSet<int> CorpseItemIDs;
 
         protected override void Initialise()
         {
@@ -31,6 +30,8 @@ namespace KitchenMysteryMeat.Systems
             {
                 All = new[] { ComponentType.ReadOnly<CPersistentCorpseHolder>() }
             });
+
+            EnsureCorpseIDCache();
         }
 
         protected override void OnUpdate()
@@ -41,27 +42,22 @@ namespace KitchenMysteryMeat.Systems
             // Track appliances that we grant temporary preservation to this frame so that the
             // cleanup pass only removes the marker from holders no longer associated with a corpse.
             HashSet<Entity> holdersReceivingTemporaryPreservation = new HashSet<Entity>();
+            List<Entity> holderBuffer = new List<Entity>(capacity: 2);
 
             for (int i = 0; i < illegalSightItems.Length; ++i)
             {
                 Entity illegalEntity = illegalSightItems[i];
                 CIllegalSight illegalSight = EntityManager.GetComponentData<CIllegalSight>(illegalEntity);
 
-                if (illegalSight.TurnIntoOnDayStart <= 0)
-                    continue;
-
-                List<Entity> holderEntities = CollectHolderEntities(illegalEntity);
-
-                if (EntityManager.HasComponent<CItem>(illegalEntity))
+                bool isCorpseItem = IsCorpseItem(illegalEntity);
+                if (isCorpseItem)
                 {
-                    if (persistentCorpsesActive)
-                    {
-                        if (!EntityManager.HasComponent<CPreservedOvernight>(illegalEntity))
-                        {
-                            EntityManager.AddComponentData(illegalEntity, new CPreservedOvernight());
-                        }
-                    }
-                    else if (EntityManager.HasComponent<CPreservedOvernight>(illegalEntity))
+                    HandleCorpseItem(illegalEntity, persistentCorpsesActive, holdersReceivingTemporaryPreservation, holderBuffer);
+                }
+                else if (EntityManager.HasComponent<CPersistentCorpseItem>(illegalEntity))
+                {
+                    EntityManager.RemoveComponent<CPersistentCorpseItem>(illegalEntity);
+                    if (EntityManager.HasComponent<CPreservedOvernight>(illegalEntity))
                     {
                         EntityManager.RemoveComponent<CPreservedOvernight>(illegalEntity);
                     }
@@ -69,7 +65,7 @@ namespace KitchenMysteryMeat.Systems
 
                 if (EntityManager.HasComponent<CAppliance>(illegalEntity))
                 {
-                    if (persistentCorpsesActive)
+                    if (persistentCorpsesActive && illegalSight.TurnIntoOnDayStart > 0)
                     {
                         if (EntityManager.HasComponent<CDestroyApplianceAtNight>(illegalEntity))
                         {
@@ -81,128 +77,84 @@ namespace KitchenMysteryMeat.Systems
                         EntityManager.AddComponentData(illegalEntity, new CDestroyApplianceAtNight());
                     }
                 }
+            }
 
-                for (int h = 0; h < holderEntities.Count; h++)
+            ReconcileTemporaryHolderFlags(persistentCorpsesActive, holdersReceivingTemporaryPreservation);
+        }
+
+        private void HandleCorpseItem(Entity corpseEntity, bool persistentActive, HashSet<Entity> holdersReceivingTemporaryPreservation, List<Entity> holderBuffer)
+        {
+            if (persistentActive)
+            {
+                bool hadPreservedOvernight = EntityManager.HasComponent<CPreservedOvernight>(corpseEntity);
+                if (!hadPreservedOvernight)
                 {
-                    Entity holderEntity = holderEntities[h];
+                    EntityManager.AddComponentData(corpseEntity, new CPreservedOvernight());
+
+                    if (!EntityManager.HasComponent<CPersistentCorpseItem>(corpseEntity))
+                    {
+                        EntityManager.AddComponent<CPersistentCorpseItem>(corpseEntity);
+                    }
+                }
+
+                List<Entity> holders = CorpseStorageUtils.CollectHolderEntities(EntityManager, corpseEntity, holderBuffer);
+                for (int h = 0; h < holders.Count; h++)
+                {
+                    Entity holderEntity = holders[h];
                     if (holderEntity == Entity.Null || !EntityManager.Exists(holderEntity))
                         continue;
 
                     if (!EntityManager.HasComponent<CAppliance>(holderEntity))
                         continue;
 
-                    if (persistentCorpsesActive)
+                    if (!EntityManager.HasComponent<CPreservesContentsOvernight>(holderEntity))
                     {
-                        if (!EntityManager.HasComponent<CPreservesContentsOvernight>(holderEntity))
+                        EntityManager.AddComponentData(holderEntity, new CPreservesContentsOvernight());
+
+                        if (!EntityManager.HasComponent<CPersistentCorpseHolder>(holderEntity))
                         {
-                            EntityManager.AddComponentData(holderEntity, new CPreservesContentsOvernight());
-
-                            if (!EntityManager.HasComponent<CPersistentCorpseHolder>(holderEntity))
-                            {
-                                // Tag this appliance so later systems know its preservation status
-                                // was provided temporarily by Persistent Corpses.
-                                EntityManager.AddComponentData(holderEntity, new CPersistentCorpseHolder());
-                            }
+                            // Tag this appliance so later systems know its preservation status
+                            // was provided temporarily by Persistent Corpses.
+                            EntityManager.AddComponentData(holderEntity, new CPersistentCorpseHolder());
                         }
-
-                        holdersReceivingTemporaryPreservation.Add(holderEntity);
                     }
+
+                    holdersReceivingTemporaryPreservation.Add(holderEntity);
                 }
             }
-
-            ReconcileTemporaryHolderFlags(persistentCorpsesActive, holdersReceivingTemporaryPreservation);
+            else if (EntityManager.HasComponent<CPersistentCorpseItem>(corpseEntity))
+            {
+                EntityManager.RemoveComponent<CPersistentCorpseItem>(corpseEntity);
+                if (EntityManager.HasComponent<CPreservedOvernight>(corpseEntity))
+                {
+                    EntityManager.RemoveComponent<CPreservedOvernight>(corpseEntity);
+                }
+            }
         }
 
-        private List<Entity> CollectHolderEntities(Entity storedEntity)
+        private bool IsCorpseItem(Entity entity)
         {
-            List<Entity> holderEntities = new List<Entity>(2);
-
-            if (EntityManager.HasComponent<CHeldBy>(storedEntity))
+            if (!EntityManager.HasComponent<CItem>(entity))
             {
-                CHeldBy heldBy = EntityManager.GetComponentData<CHeldBy>(storedEntity);
-                if (heldBy.Holder != Entity.Null)
-                {
-                    holderEntities.Add(heldBy.Holder);
-                }
+                return false;
             }
 
-            if (EntityManager.HasComponent<CStoredBy>(storedEntity))
-            {
-                CStoredBy storedBy = EntityManager.GetComponentData<CStoredBy>(storedEntity);
-                Entity storedByEntity = ExtractStoredByEntity(storedBy);
-
-                if (storedByEntity != Entity.Null && !holderEntities.Contains(storedByEntity))
-                {
-                    holderEntities.Add(storedByEntity);
-                }
-            }
-
-            return holderEntities;
+            CItem item = EntityManager.GetComponentData<CItem>(entity);
+            return CorpseItemIDs.Contains(item.ID);
         }
 
-        private static FieldInfo ResolveStoredByFieldInfo()
+        private static void EnsureCorpseIDCache()
         {
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            FieldInfo explicitField = typeof(CStoredBy).GetField("StoredBy", flags);
-            if (explicitField != null && explicitField.FieldType == typeof(Entity))
+            if (CorpseItemIDs != null)
             {
-                return explicitField;
+                return;
             }
 
-            foreach (FieldInfo candidate in typeof(CStoredBy).GetFields(flags))
+            CorpseItemIDs = new HashSet<int>
             {
-                if (candidate.FieldType == typeof(Entity))
-                {
-                    return candidate;
-                }
-            }
-
-            return null;
-        }
-
-        private static PropertyInfo ResolveStoredByPropertyInfo()
-        {
-            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
-
-            PropertyInfo explicitProperty = typeof(CStoredBy).GetProperty("StoredBy", flags);
-            if (explicitProperty != null && explicitProperty.PropertyType == typeof(Entity))
-            {
-                return explicitProperty;
-            }
-
-            foreach (PropertyInfo candidate in typeof(CStoredBy).GetProperties(flags))
-            {
-                if (candidate.PropertyType == typeof(Entity))
-                {
-                    return candidate;
-                }
-            }
-
-            return null;
-        }
-
-        private static Entity ExtractStoredByEntity(CStoredBy storedBy)
-        {
-            if (StoredByFieldInfo != null)
-            {
-                object value = StoredByFieldInfo.GetValue(storedBy);
-                if (value is Entity fieldEntity)
-                {
-                    return fieldEntity;
-                }
-            }
-
-            if (StoredByPropertyInfo != null)
-            {
-                object value = StoredByPropertyInfo.GetValue(storedBy);
-                if (value is Entity propertyEntity)
-                {
-                    return propertyEntity;
-                }
-            }
-
-            return Entity.Null;
+                GDOUtils.GetCustomGameDataObject<CustomerCorpse>().ID,
+                GDOUtils.GetCustomGameDataObject<RottenCustomerCorpse>().ID
+            };
         }
 
         private void ReconcileTemporaryHolderFlags(bool persistentCorpsesActive, HashSet<Entity> holdersReceivingTemporaryPreservation)

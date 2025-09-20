@@ -12,7 +12,7 @@ using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems
 {
-    public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
+    public class ApplyIllegalSightEffects : NightSystem, IModSystem
     {
         protected override void OnUpdate()
         {
