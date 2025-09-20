@@ -60,7 +60,7 @@
 			<HintPath>$(PlateUpManagedDir)\UnityEngine.UI.dll</HintPath>
 		</Reference>
 
-		<!-- Mod Dependencies: KitchenLib & PreferenceSystem -->
+		<!-- Mod Dependencies: xHarmony, Kichen Plate Patch, KitchenLib, & PreferenceSystem -->
 		<Reference Include="0Harmony" Condition="'$(PlateUpWorkshopDir)' != ''">
 			<HintPath>$(PlateUpWorkshopDir)\2898033283\0Harmony.dll</HintPath>
 		</Reference>
