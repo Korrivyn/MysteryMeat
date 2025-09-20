@@ -15,17 +15,21 @@ namespace KitchenMysteryMeat.Systems
     public class DestroyEmptyCustomerGroups : DaySystem, IModSystem
     {
         EntityQuery CustomerGroups;
+        EntityQuery AlertedDiners;
 
         protected override void Initialise()
         {
             base.Initialise();
 
             CustomerGroups = GetEntityQuery(typeof(CCustomerGroup));
+            AlertedDiners = GetEntityQuery(new QueryHelper()
+                .All(typeof(CAlertedCustomer), typeof(CBelongsToGroup)));
         }
 
         protected override void OnUpdate()
         {
             using NativeArray<Entity> _customerGroups = CustomerGroups.ToEntityArray(Allocator.Temp);
+            using NativeArray<CBelongsToGroup> _alertedDiners = AlertedDiners.ToComponentDataArray<CBelongsToGroup>(Allocator.Temp);
 
             for (int i = _customerGroups.Length - 1; i > -1; i--)
             {
@@ -35,6 +39,22 @@ namespace KitchenMysteryMeat.Systems
                 {
                     if (groupMembers.Length <= 0)
                     {
+                        bool hasAlertedMembersInFlight = false;
+
+                        for (int j = 0; j < _alertedDiners.Length; j++)
+                        {
+                            if (_alertedDiners[j].Group == customerGroup)
+                            {
+                                hasAlertedMembersInFlight = true;
+                                break;
+                            }
+                        }
+
+                        if (hasAlertedMembersInFlight)
+                        {
+                            continue;
+                        }
+
                         if (Require<CHasIndicator>(customerGroup, out CHasIndicator cHasIndicator))
                         {
                             EntityManager.DestroyEntity(cHasIndicator.Indicator);
