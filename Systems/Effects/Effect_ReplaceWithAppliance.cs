@@ -1,6 +1,6 @@
 // Systems/Effects/Effect_ReplaceWithAppliance.cs
-// Static helper that replaces the current entity with the appliance ID stored in the entity's CIllegalSight.
-// Useful for overnight replacements.
+// Static helper that queues an appliance replacement for illegal sights so the swap can occur after the
+// rotting fade completes at the start of the next day.
 
 using Kitchen;
 using KitchenData;
@@ -20,22 +20,35 @@ namespace KitchenMysteryMeat.Systems.Effects
                 return;
 
             var illegal = ctx.Get<CIllegalSight>(entity);
-            var pos = ctx.Get<CPosition>(entity);
 
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
 
-            // Create new appliance entity
-            Entity newEntity = ctx.CreateEntity();
-            ctx.Set(newEntity, new CCreateAppliance
+            if (ctx.Has<CPendingCorpseRot>(entity))
             {
-                ID = illegal.TurnIntoOnDayStart,
-                ForceLayer = OccupancyLayer.Ceiling
-            });
-            ctx.Set(newEntity, pos);
+                CPendingCorpseRot pending = ctx.Get<CPendingCorpseRot>(entity);
 
-            // Destroy the original
-            ctx.Destroy(entity);
+                if (pending.TargetApplianceID <= 0)
+                {
+                    pending.TargetApplianceID = illegal.TurnIntoOnDayStart;
+                }
+
+                if (pending.Duration <= 0f)
+                {
+                    pending.Duration = DefaultRotFadeDuration;
+                }
+
+                ctx.Set(entity, pending);
+                return;
+            }
+
+            ctx.Set(entity, new CPendingCorpseRot
+            {
+                TargetApplianceID = illegal.TurnIntoOnDayStart,
+                Duration = DefaultRotFadeDuration,
+                Elapsed = 0f,
+                PreservePortions = false
+            });
         }
     }
 }

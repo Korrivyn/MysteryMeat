@@ -5,6 +5,7 @@ using KitchenLib.References;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Items;
+using KitchenMysteryMeat.Views;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -31,7 +32,6 @@ namespace KitchenMysteryMeat.Customs.Appliances
                 Total = 0.5f,
                 Active = false,
                 Manual = false,
-                
             },
             new CCausesSpills()
             {
@@ -40,5 +40,16 @@ namespace KitchenMysteryMeat.Customs.Appliances
                 OverwriteOtherMesses = false
             }*/
         };
+
+        public override void OnRegister(Appliance gameDataObject)
+        {
+            var rotView = Prefab.GetComponent<CorpseRotView>();
+            if (rotView == null)
+            {
+                rotView = Prefab.AddComponent<CorpseRotView>();
+            }
+
+            rotView.Configure(Mod.Bundle.LoadAsset<GameObject>("Rotten Customer Floor Corpse"));
+        }
     }
 }
