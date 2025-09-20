@@ -86,6 +86,11 @@ namespace KitchenMysteryMeat.Systems
                         EntityManager.AddComponent<CCustomerLeaving>(customer);
                     }
 
+                    if (Has<CMoveToLocation>(customer))
+                    {
+                        EntityManager.RemoveComponent<CMoveToLocation>(customer);
+                    }
+
                     if (!Has<CAlertedCustomer>(customer))
                     {
                         EntityManager.AddComponent<CAlertedCustomer>(customer);
