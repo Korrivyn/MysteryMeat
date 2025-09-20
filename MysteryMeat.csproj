@@ -8,72 +8,80 @@
 		<Platforms>AnyCPU;x64</Platforms>
 	</PropertyGroup>
 
-	<!-- This is the section you need to add for external file references -->
+	<!-- External references resolved via local PlateUp installation -->
 	<ItemGroup>
 		<!-- PlateUp! Core DLLs for v1.2.1+ -->
-		<Reference Include="Kitchen.Common">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.Common.dll</HintPath>
+		<Reference Include="Kitchen.Common" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Kitchen.Common.dll</HintPath>
 		</Reference>
-		<Reference Include="Kitchen.GameData">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.GameData.dll</HintPath>
+		<Reference Include="Kitchen.GameData" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Kitchen.GameData.dll</HintPath>
 		</Reference>
-		<Reference Include="Kitchen.RestaurantMode">
-			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Kitchen.RestaurantMode.dll</HintPath>
+		<Reference Include="Kitchen.RestaurantMode" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Kitchen.RestaurantMode.dll</HintPath>
 		</Reference>
-		<Reference Include="KitchenMode">
-			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMode.dll</HintPath>
+		<Reference Include="KitchenMode" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\KitchenMode.dll</HintPath>
 		</Reference>
-		<Reference Include="KitchenMods">
-			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\KitchenMods.dll</HintPath>
+		<Reference Include="KitchenMods" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\KitchenMods.dll</HintPath>
 		</Reference>
-		<Reference Include="MessagePack">
-			<HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\MessagePack.dll</HintPath>
+		<Reference Include="MessagePack" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\MessagePack.dll</HintPath>
 		</Reference>
-		<Reference Include="MessagePack.Annotations">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\MessagePack.Annotations.dll</HintPath>
+		<Reference Include="MessagePack.Annotations" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\MessagePack.Annotations.dll</HintPath>
 		</Reference>
-		<Reference Include="Sirenix.Serialization">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Sirenix.Serialization.dll</HintPath>
+		<Reference Include="Sirenix.Serialization" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Sirenix.Serialization.dll</HintPath>
 		</Reference>
-		<Reference Include="Unity.Entities">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Entities.dll</HintPath>
+		<Reference Include="Unity.Entities" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Unity.Entities.dll</HintPath>
 		</Reference>
-		<Reference Include="Unity.Mathematics">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.Mathematics.dll</HintPath>
+		<Reference Include="Unity.Mathematics" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Unity.Mathematics.dll</HintPath>
 		</Reference>
-		<Reference Include="Unity.TextMeshPro">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\Unity.TextMeshPro.dll</HintPath>
+		<Reference Include="Unity.TextMeshPro" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\Unity.TextMeshPro.dll</HintPath>
 		</Reference>
-		<Reference Include="UnityEngine.AnimationModule">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.AnimationModule.dll</HintPath>
+		<Reference Include="UnityEngine.AnimationModule" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\UnityEngine.AnimationModule.dll</HintPath>
 		</Reference>
-		<Reference Include="UnityEngine.AssetBundleModule">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.AssetBundleModule.dll</HintPath>
+		<Reference Include="UnityEngine.AssetBundleModule" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\UnityEngine.AssetBundleModule.dll</HintPath>
 		</Reference>
-		<Reference Include="UnityEngine.AudioModule">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
+		<Reference Include="UnityEngine.AudioModule" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\UnityEngine.AudioModule.dll</HintPath>
 		</Reference>
-		<Reference Include="UnityEngine.CoreModule">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
+		<Reference Include="UnityEngine.CoreModule" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\UnityEngine.CoreModule.dll</HintPath>
 		</Reference>
-		<Reference Include="UnityEngine.UI">
-		  <HintPath>X:\SteamLibrary\steamapps\common\PlateUp\PlateUp\PlateUp_Data\Managed\UnityEngine.UI.dll</HintPath>
-		</Reference>	
-		
+		<Reference Include="UnityEngine.UI" Condition="'$(PlateUpManagedDir)' != ''">
+			<HintPath>$(PlateUpManagedDir)\UnityEngine.UI.dll</HintPath>
+		</Reference>
+
 		<!-- Mod Dependencies: KitchenLib & PreferenceSystem -->
-		<Reference Include="0Harmony">
-		  <HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898033283\0Harmony.dll</HintPath>
+		<Reference Include="0Harmony" Condition="'$(PlateUpWorkshopDir)' != ''">
+			<HintPath>$(PlateUpWorkshopDir)\2898033283\0Harmony.dll</HintPath>
 		</Reference>
-		<Reference Include="KitchenPlatePatch">
-			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\3306089551\KitchenPlatePatch.dll</HintPath>
+		<Reference Include="KitchenPlatePatch" Condition="'$(PlateUpWorkshopDir)' != ''">
+			<HintPath>$(PlateUpWorkshopDir)\3306089551\KitchenPlatePatch.dll</HintPath>
 		</Reference>
-		<Reference Include="KitchenLib">
-			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2898069883\KitchenLib-Workshop.dll</HintPath>
+		<Reference Include="KitchenLib" Condition="'$(PlateUpWorkshopDir)' != ''">
+			<HintPath>$(PlateUpWorkshopDir)\2898069883\KitchenLib-Workshop.dll</HintPath>
 		</Reference>
-		<Reference Include="PreferenceSystem-Workshop">
-			<HintPath>X:\SteamLibrary\steamapps\workshop\content\1599600\2949018507\PreferenceSystem-Workshop.dll</HintPath>
+		<Reference Include="PreferenceSystem-Workshop" Condition="'$(PlateUpWorkshopDir)' != ''">
+			<HintPath>$(PlateUpWorkshopDir)\2949018507\PreferenceSystem-Workshop.dll</HintPath>
 		</Reference>
 	</ItemGroup>
+
+	<Target Name="EnsurePlateUpManagedDir" BeforeTargets="ResolveReferences" Condition="'$(PlateUpManagedDir)' == ''">
+		<Error Text="PlateUpManagedDir is not defined. Copy Directory.Build.props.sample to Directory.Build.props and set the path to PlateUp\PlateUp_Data\Managed." />
+	</Target>
+
+	<Target Name="EnsurePlateUpWorkshopDir" BeforeTargets="ResolveReferences" Condition="'$(PlateUpWorkshopDir)' == ''">
+		<Error Text="PlateUpWorkshopDir is not defined. Copy Directory.Build.props.sample to Directory.Build.props and set the path to your Steam workshop content directory." />
+	</Target>
 
 	<ItemGroup>
 		<Compile Remove="UnityProject - MysteryMeat\**" />
