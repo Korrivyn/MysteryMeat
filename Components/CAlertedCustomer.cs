@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
-    public struct CRunningAway : IModComponent
+    public struct CAlertedCustomer : IModComponent
     {
     }
 }

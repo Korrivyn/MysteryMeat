@@ -79,9 +79,22 @@ namespace KitchenMysteryMeat.Systems
 
                     // Make leave
                     susIndicator.IndicatorType = SuspicionIndicatorType.Alert;
-                    EntityManager.AddComponent<CCustomerLeaving>(customer);
-                    EntityManager.AddComponent<CRunningAway>(customer);
                     EntityManager.SetComponentData(customer, susIndicator);
+
+                    if (!Has<CCustomerLeaving>(customer))
+                    {
+                        EntityManager.AddComponent<CCustomerLeaving>(customer);
+                    }
+
+                    if (!Has<CAlertedCustomer>(customer))
+                    {
+                        EntityManager.AddComponent<CAlertedCustomer>(customer);
+                    }
+
+                    if (Require<CBelongsToGroup>(customer, out CBelongsToGroup alertGroup) && !Has<CGroupStartLeaving>(alertGroup.Group))
+                    {
+                        EntityManager.AddComponent<CGroupStartLeaving>(alertGroup.Group);
+                    }
 
                     CSoundEvent.Create(EntityManager, Mod.AlertSoundEvent);
                 }
