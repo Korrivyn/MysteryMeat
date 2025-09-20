@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Flags a diner who has been alerted and has transitioned into the forced-leave flow.
+    /// </summary>
     public struct CAlertedCustomer : IModComponent
     {
     }

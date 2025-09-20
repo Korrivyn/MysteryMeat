@@ -93,6 +93,7 @@ namespace KitchenMysteryMeat.Systems
 
                     if (!Has<CAlertedCustomer>(customer))
                     {
+                        // Tag the diner so other systems treat them as part of the forced-leave sequence.
                         EntityManager.AddComponent<CAlertedCustomer>(customer);
                     }
 

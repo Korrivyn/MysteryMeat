@@ -24,6 +24,7 @@ namespace KitchenMysteryMeat.Systems
 
             Customers = GetEntityQuery(new QueryHelper()
                             .All(typeof(CCustomer), typeof(CPosition), typeof(CSuspicionIndicator), typeof(CBelongsToGroup))
+                            // Skip customers already marked as alerted so we do not re-trigger their panic logic.
                             .None(
                                 typeof(CAlertedCustomer)
                             ));

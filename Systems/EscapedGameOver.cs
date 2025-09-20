@@ -24,6 +24,7 @@ namespace KitchenMysteryMeat.Systems
             base.Initialise();
 
             Customers = GetEntityQuery(new QueryHelper()
+                            // Watch only the alerted leavers so exiting them triggers the lose condition.
                             .All(typeof(CPosition), typeof(CCustomer), typeof(CCustomerLeaving), typeof(CAlertedCustomer)));
 
             ReachedDestinationComponentType = TryGetReachedDestinationComponentType();
