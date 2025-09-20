@@ -1,3 +1,4 @@
+using System;
 using KitchenLib;
 using KitchenLib.Logging.Exceptions;
 using KitchenMods;
@@ -23,14 +24,15 @@ namespace KitchenMysteryMeat
     {
         public const string MOD_GUID = "com.quackandcheese.mysterymeat";
         public const string MOD_NAME = "Mystery Meat";
-        public const string MOD_VERSION = "0.2.1";
+        public static readonly Version ModVersion = new Version(0, 3, 0);
+        public static string ModVersionString => ModVersion.ToString();
         public const string MOD_AUTHOR = "QuackAndCheese";
         public const string MOD_GAMEVERSION = ">=1.1.9";
 
         internal static AssetBundle Bundle;
         internal static KitchenLogger Logger;
 
-        public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, MOD_VERSION, MOD_GAMEVERSION, Assembly.GetExecutingAssembly()) { }
+        public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, ModVersionString, MOD_GAMEVERSION, Assembly.GetExecutingAssembly()) { }
 
         public static SoundEvent StabSoundEvent;
         public static SoundEvent PoisonSoundEvent;
@@ -48,7 +50,7 @@ namespace KitchenMysteryMeat
 
         protected override void OnInitialise()
         {
-            Logger.LogWarning($"{MOD_GUID} v{MOD_VERSION} in use!");
+            Logger.LogWarning($"{MOD_GUID} v{ModVersion} in use!");
         }
 
         protected override void OnUpdate()
