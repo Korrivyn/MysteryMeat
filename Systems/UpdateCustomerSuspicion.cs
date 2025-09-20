@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
-using static Sony.NP.Matching;
 
 namespace KitchenMysteryMeat.Systems
 {
