@@ -4,6 +4,7 @@ using KitchenLib.Utils;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
 using System.Collections.Generic;
+using System.Reflection;
 using Unity.Collections;
 using Unity.Entities;
 
@@ -13,6 +14,9 @@ namespace KitchenMysteryMeat.Systems
     {
         private EntityQuery IllegalSightEntities;
         private EntityQuery TemporarilyPreservingHolders;
+
+        private static readonly FieldInfo StoredByFieldInfo = ResolveStoredByFieldInfo();
+        private static readonly PropertyInfo StoredByPropertyInfo = ResolveStoredByPropertyInfo();
 
         protected override void Initialise()
         {
@@ -125,7 +129,7 @@ namespace KitchenMysteryMeat.Systems
             if (EntityManager.HasComponent<CStoredBy>(storedEntity))
             {
                 CStoredBy storedBy = EntityManager.GetComponentData<CStoredBy>(storedEntity);
-                Entity storedByEntity = storedBy.StoredBy;
+                Entity storedByEntity = ExtractStoredByEntity(storedBy);
 
                 if (storedByEntity != Entity.Null && !holderEntities.Contains(storedByEntity))
                 {
@@ -134,6 +138,71 @@ namespace KitchenMysteryMeat.Systems
             }
 
             return holderEntities;
+        }
+
+        private static FieldInfo ResolveStoredByFieldInfo()
+        {
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            FieldInfo explicitField = typeof(CStoredBy).GetField("StoredBy", flags);
+            if (explicitField != null && explicitField.FieldType == typeof(Entity))
+            {
+                return explicitField;
+            }
+
+            foreach (FieldInfo candidate in typeof(CStoredBy).GetFields(flags))
+            {
+                if (candidate.FieldType == typeof(Entity))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static PropertyInfo ResolveStoredByPropertyInfo()
+        {
+            BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+
+            PropertyInfo explicitProperty = typeof(CStoredBy).GetProperty("StoredBy", flags);
+            if (explicitProperty != null && explicitProperty.PropertyType == typeof(Entity))
+            {
+                return explicitProperty;
+            }
+
+            foreach (PropertyInfo candidate in typeof(CStoredBy).GetProperties(flags))
+            {
+                if (candidate.PropertyType == typeof(Entity))
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
+        }
+
+        private static Entity ExtractStoredByEntity(CStoredBy storedBy)
+        {
+            if (StoredByFieldInfo != null)
+            {
+                object value = StoredByFieldInfo.GetValue(storedBy);
+                if (value is Entity fieldEntity)
+                {
+                    return fieldEntity;
+                }
+            }
+
+            if (StoredByPropertyInfo != null)
+            {
+                object value = StoredByPropertyInfo.GetValue(storedBy);
+                if (value is Entity propertyEntity)
+                {
+                    return propertyEntity;
+                }
+            }
+
+            return Entity.Null;
         }
 
         private void ReconcileTemporaryHolderFlags(bool persistentCorpsesActive, HashSet<Entity> holdersReceivingTemporaryPreservation)
