@@ -90,7 +90,7 @@ namespace KitchenMysteryMeat.Views
                 AlertIconParent.SetActive(true);
                 SuspicionIconParent.SetActive(false);
 
-                if (AlertSound)
+                if (AlertSound != null)
                 {
                     if (!AlertSound.IsPlaying || AlertSound.TargetVolume == 0)
                         AlertSound.Play();
@@ -109,10 +109,13 @@ namespace KitchenMysteryMeat.Views
                     // Fill amount starts from 0, then goes up
                     SuspicionIconFill.fillAmount = 1 - (data.RemainingTime / data.TotalTime);
 
-                    if (!SuspicionSound.IsPlaying || SuspicionSound.TargetVolume == 0)
-                        SuspicionSound.Play();
-                    SuspicionSound.VolumeMultiplier = SuspicionIconFill.fillAmount * (Mod.PrefManager.Get<int>(Mod.SUSPICION_VOLUME_ID) / 100.0f);
-                    SuspicionSound.Pitch = 0.5f + (1.5f * SuspicionIconFill.fillAmount);
+                    if (SuspicionSound != null)
+                    {
+                        if (!SuspicionSound.IsPlaying || SuspicionSound.TargetVolume == 0)
+                            SuspicionSound.Play();
+                        SuspicionSound.VolumeMultiplier = SuspicionIconFill.fillAmount * (Mod.PrefManager.Get<int>(Mod.SUSPICION_VOLUME_ID) / 100.0f);
+                        SuspicionSound.Pitch = 0.5f + (1.5f * SuspicionIconFill.fillAmount);
+                    }
                 }
             }
             else if (AlertIconParent.activeSelf || SuspicionIconParent.activeSelf)
