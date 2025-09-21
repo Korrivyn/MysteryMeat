@@ -22,16 +22,16 @@ namespace KitchenMysteryMeat.Systems
                 All = new[] { ComponentType.ReadOnly<CIllegalSight>() }
             });
 
-            using (NativeArray<Entity> illegals = query.ToEntityArray(Allocator.Temp))
+            using (NativeArray<Entity> allEntities = query.ToEntityArray(Allocator.Temp))
             {
-                if (illegals.Length > 0)
+                if (allEntities.Length > 0)
                 {
                     // Create an EntityContext backed by the project's EntityManager
                     EntityContext ctx = new EntityContext(EntityManager);
 
-                    for (int i = illegals.Length - 1; i >= 0; --i)
+                    for (int i = allEntities.Length - 1; i >= 0; --i)
                     {
-                        Entity e = illegals[i];
+                        Entity e = allEntities[i];
 
                         if (ctx.Has<CItem>(e))
                         {
