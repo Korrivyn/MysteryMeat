@@ -63,7 +63,7 @@ namespace KitchenMysteryMeat.Systems
                 TryTransformHeldEntity(ctx, holder.HeldItem, processedItems);
             }
 
-            if (EntityManager.HasBuffer<CItemStored>(appliance))
+            if (EntityManager.HasComponent<CItemStored>(appliance))
             {
                 DynamicBuffer<CItemStored> storedItems = EntityManager.GetBuffer<CItemStored>(appliance);
                 for (int i = 0; i < storedItems.Length; i++)
