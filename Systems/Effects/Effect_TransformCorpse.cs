@@ -44,6 +44,11 @@ namespace KitchenMysteryMeat.Systems.Effects
                 return;
             }
 
+            QueueCorpseTransformation(ctx, entity, illegal);
+        }
+
+        private static void QueueCorpseTransformation(EntityContext ctx, Entity entity, CIllegalSight illegal)
+        {
             // Add the change marker (CChangeItemType) using the modern context API.
             ctx.Set(entity, new CChangeItemType { NewID = illegal.TurnIntoOnDayStart });
 
