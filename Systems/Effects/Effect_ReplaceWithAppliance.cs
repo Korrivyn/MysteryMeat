@@ -25,6 +25,24 @@ namespace KitchenMysteryMeat.Systems.Effects
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
 
+            Entity heldEntity = Entity.Null;
+
+            if (ctx.Has<CItemHolder>(entity))
+            {
+                var holder = ctx.Get<CItemHolder>(entity);
+                heldEntity = holder.HeldItem;
+            }
+            else if (ctx.Has<CHeldItem>(entity))
+            {
+                var held = ctx.Get<CHeldItem>(entity);
+                heldEntity = held.HeldItem;
+            }
+
+            if (heldEntity != Entity.Null && ctx.Has<CIllegalSight>(heldEntity))
+            {
+                TransformCorpse(ctx, heldEntity);
+            }
+
             // Create new appliance entity
             Entity newEntity = ctx.CreateEntity();
             ctx.Set(newEntity, new CCreateAppliance
