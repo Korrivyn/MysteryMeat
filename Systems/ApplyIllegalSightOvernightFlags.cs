@@ -35,20 +35,17 @@ namespace KitchenMysteryMeat.Systems
 
             HashSet<Entity> holdersWithIllegalItems = persistent ? new HashSet<Entity>() : null;
 
-            if (persistent)
+            using NativeArray<Entity> illegals = IllegalEntities.ToEntityArray(Allocator.Temp);
+            for (int i = 0; i < illegals.Length; ++i)
             {
-                using NativeArray<Entity> illegals = IllegalEntities.ToEntityArray(Allocator.Temp);
-                for (int i = 0; i < illegals.Length; ++i)
+                Entity entity = illegals[i];
+
+                if (persistent && EntityManager.HasComponent<CItem>(entity))
                 {
-                    Entity entity = illegals[i];
-
-                    if (!EntityManager.HasComponent<CItem>(entity))
-                    {
-                        continue;
-                    }
-
                     HandleHeldItemPreservation(entity, holdersWithIllegalItems);
                 }
+
+                HandleApplianceOvernightBehaviour(entity, persistent);
             }
 
             CleanupHolderPreservers(persistent, holdersWithIllegalItems);
@@ -118,6 +115,31 @@ namespace KitchenMysteryMeat.Systems
                 }
 
                 EntityManager.RemoveComponent<CIllegalSightHolderPreserved>(holder);
+            }
+        }
+
+        private void HandleApplianceOvernightBehaviour(Entity entity, bool persistent)
+        {
+            if (!EntityManager.HasComponent<CAppliance>(entity))
+            {
+                return;
+            }
+
+            bool hasDestroyMarker = EntityManager.HasComponent<CDestroyApplianceAtNight>(entity);
+
+            if (persistent)
+            {
+                if (hasDestroyMarker)
+                {
+                    EntityManager.RemoveComponent<CDestroyApplianceAtNight>(entity);
+                }
+
+                return;
+            }
+
+            if (!hasDestroyMarker)
+            {
+                EntityManager.AddComponentData(entity, new CDestroyApplianceAtNight());
             }
         }
     }
