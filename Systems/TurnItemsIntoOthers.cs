@@ -34,7 +34,7 @@ namespace KitchenMysteryMeat.Systems
 
                 if (cTurnIntoItem.NewID == 0)
                 {
-                    return;
+                    continue;
                 }
                 EntityManager.AddComponentData<CChangeItemType>(item, new CChangeItemType()
                 {
