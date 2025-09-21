@@ -31,16 +31,16 @@ namespace KitchenMysteryMeat.Systems.Effects
 
                 if (holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity))
                 {
-                    bool addedPreserver = false;
+                    bool shouldSkip = false;
 
                     if (ctx.Has<CIllegalSightHolderPreserved>(holderEntity))
                     {
                         CIllegalSightHolderPreserved marker = ctx.Get<CIllegalSightHolderPreserved>(holderEntity);
-                        addedPreserver = marker.AddedPreserver;
+                        shouldSkip = !marker.AddedPreserver;
                     }
 
                     // Only skip transforming if the holder already preserved contents before our systems intervened.
-                    if (!addedPreserver)
+                    if (shouldSkip)
                         return;
                 }
             }
