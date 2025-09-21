@@ -29,8 +29,18 @@ namespace KitchenMysteryMeat.Systems.Effects
                 CHeldBy holder = ctx.Get<CHeldBy>(entity);
                 if (holder.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holder.Holder))
                 {
-                    // Holder preserves contents — do nothing.
-                    return;
+                    bool addedByOvernightSystem = false;
+                    if (ctx.Has<CIllegalSightHolderPreserved>(holder.Holder))
+                    {
+                        CIllegalSightHolderPreserved marker = ctx.Get<CIllegalSightHolderPreserved>(holder.Holder);
+                        addedByOvernightSystem = marker.AddedPreserver;
+                    }
+
+                    if (!addedByOvernightSystem)
+                    {
+                        // Holder preserves contents on its own — do nothing.
+                        return;
+                    }
                 }
             }
 
