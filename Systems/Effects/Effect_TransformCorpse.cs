@@ -23,14 +23,20 @@ namespace KitchenMysteryMeat.Systems.Effects
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
 
-            // If item is held, ensure the holder does not preserve contents overnight.
+            bool itemIsExplicitlyPreserved = ctx.Has<CPreservedOvernight>(entity);
+
+            // If item is held, ensure the holder does not preserve contents overnight unless
+            // the item itself opts into being preserved.
             if (ctx.Has<CHeldBy>(entity))
             {
                 CHeldBy holder = ctx.Get<CHeldBy>(entity);
                 if (holder.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holder.Holder))
                 {
-                    // Holder preserves contents — do nothing.
-                    return;
+                    if (itemIsExplicitlyPreserved)
+                    {
+                        // Holder preserves contents and the item should remain unchanged.
+                        return;
+                    }
                 }
             }
 
