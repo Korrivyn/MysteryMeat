@@ -23,21 +23,39 @@ namespace KitchenMysteryMeat.Systems.Effects
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
 
-            bool itemIsExplicitlyPreserved = ctx.Has<CPreservedOvernight>(entity);
+            Entity preservingHolder = Entity.Null;
 
-            // If item is held, ensure the holder does not preserve contents overnight unless
-            // the item itself opts into being preserved.
             if (ctx.Has<CHeldBy>(entity))
             {
                 CHeldBy holder = ctx.Get<CHeldBy>(entity);
                 if (holder.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holder.Holder))
                 {
-                    if (itemIsExplicitlyPreserved)
-                    {
-                        // Holder preserves contents and the item should remain unchanged.
-                        return;
-                    }
+                    preservingHolder = holder.Holder;
                 }
+            }
+
+            bool holderPreserverAddedByMod = false;
+
+            if (preservingHolder != Entity.Null)
+            {
+                if (ctx.Has<CIllegalSightHolderPreserved>(preservingHolder))
+                {
+                    var marker = ctx.Get<CIllegalSightHolderPreserved>(preservingHolder);
+                    holderPreserverAddedByMod = marker.AddedPreserver;
+                }
+            }
+
+            if (holderPreserverAddedByMod)
+            {
+                // Temporarily remove the preserver so the overnight transformation can proceed.
+                ctx.Remove<CPreservesContentsOvernight>(preservingHolder);
+            }
+
+            if (ctx.Has<CPreservedOvernight>(entity))
+            {
+                // Explicit preservation marks can block the swap as well, so clear them before
+                // applying the change. The replacement item will reapply its own properties.
+                ctx.Remove<CPreservedOvernight>(entity);
             }
 
             // Add the change marker (CChangeItemType) using the modern context API.
