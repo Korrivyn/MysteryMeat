@@ -45,17 +45,17 @@ namespace KitchenMysteryMeat.Systems
                 CAutomatedInteractorRandomActiveInterval cautomatedInteractorRandomActiveInterval;
                 if (base.Require<CAutomatedInteractorRandomActiveInterval>(automatedInteractor, out cautomatedInteractorRandomActiveInterval) && !cautomatedInteractorRandomActiveInterval.Active)
                 {
-                    return;
+                    continue;
                 }
                 Vector3 forwardPosition = position.ForwardPosition;
                 Entity occupant = TileManager.GetOccupant(forwardPosition, OccupancyLayer.Default);
                 if (!TileManager.CanReach(position, forwardPosition, false))
                 {
-                    return;
+                    continue;
                 }
                 if (occupant == default(Entity))
                 {
-                    return;
+                    continue;
                 }
                 EntityManager.AddComponentData<CAttemptingInteraction>(automatedInteractor, new CAttemptingInteraction
                 {
