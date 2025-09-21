@@ -32,11 +32,6 @@ namespace KitchenMysteryMeat.Systems.Effects
                 var holder = ctx.Get<CItemHolder>(entity);
                 heldEntity = holder.HeldItem;
             }
-            else if (ctx.Has<CHeldItem>(entity))
-            {
-                var held = ctx.Get<CHeldItem>(entity);
-                heldEntity = held.HeldItem;
-            }
 
             if (heldEntity != Entity.Null && ctx.Has<CIllegalSight>(heldEntity))
             {
