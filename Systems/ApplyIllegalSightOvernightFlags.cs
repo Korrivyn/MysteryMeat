@@ -129,9 +129,15 @@ namespace KitchenMysteryMeat.Systems
 
             if (persistent)
             {
-                if (hasDestroyMarker)
+                CIllegalSight illegalSight = EntityManager.GetComponentData<CIllegalSight>(entity);
+                bool transformsOnDayStart = illegalSight.TurnIntoOnDayStart > 0;
+
+                if (transformsOnDayStart)
                 {
-                    EntityManager.RemoveComponent<CDestroyApplianceAtNight>(entity);
+                    if (hasDestroyMarker)
+                    {
+                        EntityManager.RemoveComponent<CDestroyApplianceAtNight>(entity);
+                    }
                 }
 
                 return;
