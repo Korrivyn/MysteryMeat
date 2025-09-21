@@ -1,4 +1,5 @@
 using Kitchen;
+using KitchenData;
 using KitchenLib.Utils;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
