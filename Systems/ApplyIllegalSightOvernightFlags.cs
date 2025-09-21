@@ -67,6 +67,24 @@ namespace KitchenMysteryMeat.Systems
 
             holdersWithIllegalItems.Add(holder);
 
+            bool changeQueued = EntityManager.HasComponent<CChangeItemType>(item);
+            if (changeQueued)
+            {
+                // A transform is already pending for this corpse. Leave the holder without an
+                // overnight preserver so the queued CChangeItemType can execute before we reapply
+                // preservation on the next frame.
+                if (EntityManager.HasComponent<CIllegalSightHolderPreserved>(holder))
+                {
+                    CIllegalSightHolderPreserved marker = EntityManager.GetComponentData<CIllegalSightHolderPreserved>(holder);
+                    if (marker.AddedPreserver && EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
+                    {
+                        EntityManager.RemoveComponent<CPreservesContentsOvernight>(holder);
+                    }
+                }
+
+                return;
+            }
+
             bool hadPreserver = EntityManager.HasComponent<CPreservesContentsOvernight>(holder);
             if (!hadPreserver)
             {
