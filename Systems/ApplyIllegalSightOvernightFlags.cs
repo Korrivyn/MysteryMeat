@@ -1,5 +1,4 @@
 using Kitchen;
-using KitchenData;
 using KitchenLib.Utils;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
@@ -35,48 +34,19 @@ namespace KitchenMysteryMeat.Systems
 
             HashSet<Entity> holdersWithIllegalItems = persistent ? new HashSet<Entity>() : null;
 
-            using NativeArray<Entity> illegals = IllegalEntities.ToEntityArray(Allocator.Temp);
-            for (int i = 0; i < illegals.Length; ++i)
+            if (persistent)
             {
-                Entity entity = illegals[i];
-                CIllegalSight illegal = EntityManager.GetComponentData<CIllegalSight>(entity);
-                bool canTurn = illegal.TurnIntoOnDayStart > 0;
-                bool hasPreservedFlag = EntityManager.HasComponent<CPreservedOvernight>(entity);
-
-                if (EntityManager.HasComponent<CItem>(entity))
+                using NativeArray<Entity> illegals = IllegalEntities.ToEntityArray(Allocator.Temp);
+                for (int i = 0; i < illegals.Length; ++i)
                 {
-                    if (persistent)
-                    {
-                        if (canTurn && !hasPreservedFlag)
-                        {
-                            EntityManager.AddComponentData(entity, new CPreservedOvernight());
-                            hasPreservedFlag = true;
-                        }
+                    Entity entity = illegals[i];
 
-                        if ((canTurn || hasPreservedFlag) && holdersWithIllegalItems != null)
-                        {
-                            HandleHeldItemPreservation(entity, holdersWithIllegalItems);
-                        }
-                    }
-                    else if (canTurn && hasPreservedFlag)
+                    if (!EntityManager.HasComponent<CItem>(entity))
                     {
-                        EntityManager.RemoveComponent<CPreservedOvernight>(entity);
+                        continue;
                     }
-                }
 
-                if (EntityManager.HasComponent<CAppliance>(entity))
-                {
-                    if (persistent)
-                    {
-                        if (EntityManager.HasComponent<CDestroyApplianceAtNight>(entity))
-                        {
-                            EntityManager.RemoveComponent<CDestroyApplianceAtNight>(entity);
-                        }
-                    }
-                    else if (canTurn && !EntityManager.HasComponent<CDestroyApplianceAtNight>(entity))
-                    {
-                        EntityManager.AddComponentData(entity, new CDestroyApplianceAtNight());
-                    }
+                    HandleHeldItemPreservation(entity, holdersWithIllegalItems);
                 }
             }
 
