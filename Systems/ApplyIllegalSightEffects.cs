@@ -15,23 +15,54 @@ namespace KitchenMysteryMeat.Systems
 {
     public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
     {
-        protected override void OnUpdate()
+        private EntityQuery IllegalQuery;
+        private EntityQuery ApplianceHolderQuery;
+        private EntityQuery ApplianceStorageQuery;
+
+        protected override void Initialise()
         {
-            // Build query of illegal entities
-            var query = GetEntityQuery(new EntityQueryDesc
+            base.Initialise();
+
+            IllegalQuery = GetEntityQuery(new EntityQueryDesc
             {
                 All = new[] { ComponentType.ReadOnly<CIllegalSight>() }
             });
 
-            using (NativeArray<Entity> illegals = query.ToEntityArray(Allocator.Temp))
+            ApplianceHolderQuery = GetEntityQuery(new EntityQueryDesc
             {
-                if (illegals.Length == 0)
-                    return;
+                All = new[]
+                {
+                    ComponentType.ReadOnly<CAppliance>(),
+                    ComponentType.ReadOnly<CItemHolder>()
+                }
+            });
 
-                // Create an EntityContext backed by the project's EntityManager
-                EntityContext ctx = new EntityContext(EntityManager);
-                HashSet<Entity> processedItems = new HashSet<Entity>();
+            ApplianceStorageQuery = GetEntityQuery(new EntityQueryDesc
+            {
+                All = new[]
+                {
+                    ComponentType.ReadOnly<CAppliance>(),
+                    ComponentType.ReadOnly<CItemStored>()
+                }
+            });
+        }
 
+        protected override void OnUpdate()
+        {
+            bool hasIllegalItems = !IllegalQuery.IsEmptyIgnoreFilter;
+            bool hasHolders = !ApplianceHolderQuery.IsEmptyIgnoreFilter;
+            bool hasStorage = !ApplianceStorageQuery.IsEmptyIgnoreFilter;
+
+            if (!hasIllegalItems && !hasHolders && !hasStorage)
+                return;
+
+            // Create an EntityContext backed by the project's EntityManager
+            EntityContext ctx = new EntityContext(EntityManager);
+            HashSet<Entity> processedItems = new HashSet<Entity>();
+
+            if (hasIllegalItems)
+            {
+                using NativeArray<Entity> illegals = IllegalQuery.ToEntityArray(Allocator.Temp);
                 for (int i = illegals.Length - 1; i >= 0; --i)
                 {
                     Entity e = illegals[i];
@@ -48,6 +79,41 @@ namespace KitchenMysteryMeat.Systems
                         ProcessApplianceSurfaceContents(ctx, e, processedItems);
                         CorpseEffects.ReplaceWithAppliance(ctx, e);
                     }
+                }
+            }
+
+            if (hasHolders)
+            {
+                ProcessAllItemHolders(ctx, processedItems);
+            }
+
+            if (hasStorage)
+            {
+                ProcessAllStoredItems(ctx, processedItems);
+            }
+        }
+
+        private void ProcessAllItemHolders(EntityContext ctx, HashSet<Entity> processedItems)
+        {
+            using NativeArray<Entity> holders = ApplianceHolderQuery.ToEntityArray(Allocator.Temp);
+            for (int i = holders.Length - 1; i >= 0; --i)
+            {
+                Entity appliance = holders[i];
+                CItemHolder holder = EntityManager.GetComponentData<CItemHolder>(appliance);
+                TryTransformHeldEntity(ctx, holder.HeldItem, processedItems);
+            }
+        }
+
+        private void ProcessAllStoredItems(EntityContext ctx, HashSet<Entity> processedItems)
+        {
+            using NativeArray<Entity> storages = ApplianceStorageQuery.ToEntityArray(Allocator.Temp);
+            for (int i = storages.Length - 1; i >= 0; --i)
+            {
+                Entity appliance = storages[i];
+                DynamicBuffer<CItemStored> storedItems = EntityManager.GetBuffer<CItemStored>(appliance);
+                for (int j = 0; j < storedItems.Length; j++)
+                {
+                    TryTransformHeldEntity(ctx, storedItems[j].StoredItem, processedItems);
                 }
             }
         }
@@ -76,6 +142,9 @@ namespace KitchenMysteryMeat.Systems
         private void TryTransformHeldEntity(EntityContext ctx, Entity heldItem, HashSet<Entity> processedItems)
         {
             if (heldItem == Entity.Null || !EntityManager.Exists(heldItem))
+                return;
+
+            if (!ctx.Has<CIllegalSight>(heldItem))
                 return;
 
             if (!processedItems.Add(heldItem))
