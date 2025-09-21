@@ -12,45 +12,30 @@ namespace KitchenMysteryMeat.Systems.Effects
     {
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
-            if (!ctx.Has<CIllegalSight>(entity) || !ctx.Has<CItem>(entity))
+            // Confirm if this is a corpse & needs to be rotted.
+            if (ctx.Has<CIllegalSight>(entity))
             {
-                return;
-            }
-
-            CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
-            if (illegal.TurnIntoOnDayStart <= 0)
-            {
-                return;
-            }
-
-            bool heldByPermanentPreserver = false;
-            if (ctx.Has<CHeldBy>(entity))
-            {
-                Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
-                if (holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity))
+                CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
+                if (illegalSight.TurnIntoOnDayStart > 0)
                 {
-                    bool temporaryPreserver = false;
-                    if (ctx.Has<CIllegalSightHolderPreserved>(holderEntity))
-                    {
-                        temporaryPreserver = ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
-                    }
-
-                    heldByPermanentPreserver = !temporaryPreserver;
+                    QueueCorpseTransformation(ctx, entity, illegalSight);
                 }
             }
-
-            if (heldByPermanentPreserver)
+            // Otherwise, if it has an item, we can check for corpses within and rot accordingly.
+            else if (ctx.Has<CItem>(entity))
             {
-                return;
+                Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
+                if (holderEntity != null && !ctx.Has<CPreservesContentsOvernight>(holderEntity))
+                {
+                    QueueCorpseTransformation(ctx, entity, ctx.Get<CIllegalSight>(holderEntity));
+                }
             }
-
-            QueueCorpseTransformation(ctx, entity, illegal);
         }
 
-        private static void QueueCorpseTransformation(EntityContext ctx, Entity entity, CIllegalSight illegal)
+        private static void QueueCorpseTransformation(EntityContext ctx, Entity entity, CIllegalSight illegalSight)
         {
             // Add the change marker (CChangeItemType) using the modern context API.
-            ctx.Set(entity, new CChangeItemType { NewID = illegal.TurnIntoOnDayStart });
+            ctx.Set(entity, new CChangeItemType { NewID = illegalSight.TurnIntoOnDayStart });
 
             // Preserve portions if splittable
             if (ctx.Has<CSplittableItem>(entity))
