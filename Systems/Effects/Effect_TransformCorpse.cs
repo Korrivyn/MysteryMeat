@@ -12,26 +12,36 @@ namespace KitchenMysteryMeat.Systems.Effects
     {
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
-            if (!ctx.Has<CIllegalSight>(entity))
+            if (!ctx.Has<CIllegalSight>(entity) || !ctx.Has<CItem>(entity))
+            {
                 return;
-
-            if (!ctx.Has<CItem>(entity))
-                return;
+            }
 
             CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
-
             if (illegal.TurnIntoOnDayStart <= 0)
+            {
                 return;
+            }
 
-            // If item is held, ensure the holder does not preserve contents overnight.
+            bool heldByPermanentPreserver = false;
             if (ctx.Has<CHeldBy>(entity))
             {
-                CHeldBy holder = ctx.Get<CHeldBy>(entity);
-                if (holder.Holder != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holder.Holder))
+                Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
+                if (holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity))
                 {
-                    // Holder preserves contents — do nothing.
-                    return;
+                    bool temporaryPreserver = false;
+                    if (ctx.Has<CIllegalSightHolderPreserved>(holderEntity))
+                    {
+                        temporaryPreserver = ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
+                    }
+
+                    heldByPermanentPreserver = !temporaryPreserver;
                 }
+            }
+
+            if (heldByPermanentPreserver)
+            {
+                return;
             }
 
             // Add the change marker (CChangeItemType) using the modern context API.
