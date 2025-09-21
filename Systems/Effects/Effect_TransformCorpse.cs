@@ -21,13 +21,14 @@ namespace KitchenMysteryMeat.Systems.Effects
                     QueueCorpseTransformation(ctx, entity, illegalSight);
                 }
             }
-            // Otherwise, if it has an item, we can check for corpses within and rot accordingly.
+            // Otherwise, if it has an item, we can check for corpses within. Rot if it doesn't preserve food already anyway.
             else if (ctx.Has<CItem>(entity))
             {
                 Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
                 if (holderEntity != null && !ctx.Has<CPreservesContentsOvernight>(holderEntity))
                 {
-                    QueueCorpseTransformation(ctx, entity, ctx.Get<CIllegalSight>(holderEntity));
+                    CIllegalSight illegalSight = ctx.Get<CIllegalSight>(holderEntity);
+                    QueueCorpseTransformation(ctx, entity, illegalSight);
                 }
             }
         }
