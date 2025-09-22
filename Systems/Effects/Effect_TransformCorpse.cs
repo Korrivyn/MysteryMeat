@@ -14,49 +14,45 @@ namespace KitchenMysteryMeat.Systems.Effects
     {
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
-            // Any item ready to be transformed.
-            if (ctx.Has<CItem>(entity))
+            // If this is a corpse on an appliance
+            if (ctx.Has<CHeldBy>(entity))
             {
-                // If it's a corpse item on an appliance
-                if (ctx.Has<CAppliance>(entity))
-                {
-                    /// TODO: Get the corpse entity from the appliance.
-                    // Remove from the appliance, run through TransformCorpse again.
-                    TransformCorpse(ctx, entity);
-                }
                 QueueUnpreservedCorpses(ctx, entity);
             }
-            else // Corpse Appliance on the floor.
-            if (ctx.Has<CIllegalSight>(entity))
+            else
             {
-                ReplaceApplianceCorpses(ctx, entity);
+                // The Corpse Item itself
+                if (ctx.Has<CItem>(entity))
+                {
+                    QueueCorpseTransformation(ctx, entity);
+                }
+                else // Corpse on the ground
+                {
+                    ReplaceApplianceCorpses(ctx, entity);
+                }
             }
         }
 
         private static void QueueUnpreservedCorpses (EntityContext ctx, Entity entity)
         {
-            // If this is a corpse specifically.
-            if (ctx.Has<CIllegalSight>(entity))
+            Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
+            if (holderEntity != Entity.Null)
             {
-                CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
-                Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
-                if (holderEntity != Entity.Null)
+                if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
                 {
-                    if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
-                    {
-                        QueueCorpseTransformation(ctx, entity, illegalSight); // In a container, but it's not a preserving one.
-                    }
+                    QueueCorpseTransformation(ctx, entity); // In a container, but it's not a preserving one.
                 }
-                else
-                {
-                    QueueCorpseTransformation(ctx, entity, illegalSight); // OR Not in any container at all.
-                }
+            }
+            else
+            {
+                QueueCorpseTransformation(ctx, entity); // OR Not in any container at all.
             }
         }
 
 
-        private static void QueueCorpseTransformation(EntityContext ctx, Entity entity, CIllegalSight illegalSight)
+        private static void QueueCorpseTransformation(EntityContext ctx, Entity entity)
         {
+            CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
             // Confirm this corpse is ready to be decayed.
             if (illegalSight.TurnIntoOnDayStart > 0)
             {
