@@ -3,6 +3,7 @@
 // Uses EntityContext (modern API already used in this project) and does not use KitchenData lookups.
 
 using Kitchen;
+using KitchenData;
 using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
 using Unity.Entities;
@@ -23,11 +24,51 @@ namespace KitchenMysteryMeat.Systems.Effects
 
             CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
 
-            // Guard: confirm the illegal sight provides a valid rotten replacement.
+            // Guard: confirm the illegal sight provides a valid rotten replacement or recover it from the blueprint when stale.
             if (illegal.TurnIntoOnDayStart <= 0)
             {
-                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} skipped - no TurnIntoOnDayStart configured.");
-                return;
+                // Attempt to recover the rotten target from the source item blueprint.
+                CItem itemData = ctx.Get<CItem>(entity);
+                bool recoveredFromBlueprint = false;
+
+                // Resolve the blueprint so we can inspect its attached properties.
+                if (GameData.Main.TryGet(itemData.ID, out Item itemBlueprint, false))
+                {
+                    // Inspect the blueprint properties for a CIllegalSight definition with a valid transformation target.
+                    if (itemBlueprint?.Properties != null)
+                    {
+                        // Iterate through the blueprint properties to locate a valid illegal sight definition.
+                        foreach (IAttachableProperty property in itemBlueprint.Properties)
+                        {
+                            if (property is CIllegalSight blueprintIllegal && blueprintIllegal.TurnIntoOnDayStart > 0)
+                            {
+                                illegal.TurnIntoOnDayStart = blueprintIllegal.TurnIntoOnDayStart;
+                                ctx.Set(entity, illegal);
+                                recoveredFromBlueprint = true;
+                                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} recovered TurnIntoOnDayStart {illegal.TurnIntoOnDayStart} from blueprint {itemData.ID}.");
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!recoveredFromBlueprint)
+                    {
+                        // Log the absence of a usable illegal sight property when inspection succeeds.
+                        LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} item blueprint {itemData.ID} lacked a valid TurnIntoOnDayStart.");
+                    }
+                }
+                else
+                {
+                    // Log the inability to resolve the item blueprint so missing data can be traced.
+                    LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} item blueprint {itemData.ID} could not be resolved for TurnIntoOnDayStart recovery.");
+                }
+
+                if (!recoveredFromBlueprint)
+                {
+                    // Abort when no valid rotten target is discovered after the fallback recovery attempt.
+                    LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} skipped - no TurnIntoOnDayStart configured.");
+                    return;
+                }
             }
 
             LogCorpseDebug($"[TransformCorpse] Preparing to rot entity {entity.Index} into item {illegal.TurnIntoOnDayStart}.");
