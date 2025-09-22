@@ -17,7 +17,6 @@ The build will emit a clear error if either property is missing so you know to u
 The project expects the following workshop items to exist under `$(PlateUpWorkshopDir)`:
 
 - `2898033283` – Harmony (`0Harmony.dll`)
-- `3306089551` – KitchenPlatePatch (`KitchenPlatePatch.dll`)
 - `2898069883` – KitchenLib (`KitchenLib-Workshop.dll`)
 - `2949018507` – PreferenceSystem (`PreferenceSystem-Workshop.dll`)
 
