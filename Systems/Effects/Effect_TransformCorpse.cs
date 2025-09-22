@@ -43,10 +43,16 @@ namespace KitchenMysteryMeat.Systems.Effects
             CHeldBy heldBy = ctx.Get<CHeldBy>(entity);
             Entity holderEntity = heldBy.Holder;
 
-            // Determine whether the corpse should decay while being held.
-            bool shouldTransformWhileHeld = holderEntity == Entity.Null || !ctx.Has<CPreservesContentsOvernight>(holderEntity);
+            // Determine whether the holder has an active overnight preserver component.
+            bool holderHasOvernightPreserver = holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity);
 
-            // Queue the standard transformation when the holder cannot preserve its contents.
+            // Capture whether the preserver was injected solely for illegal-sight handling.
+            bool holderPreserverIsTemporary = holderHasOvernightPreserver && ctx.Has<CIllegalSightHolderPreserved>(holderEntity) && ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
+
+            // Determine whether the corpse should decay while being held, ignoring temporary preservers.
+            bool shouldTransformWhileHeld = holderEntity == Entity.Null || !holderHasOvernightPreserver || holderPreserverIsTemporary;
+
+            // Queue the standard transformation when the holder cannot preserve its contents or the preserver is temporary.
             if (shouldTransformWhileHeld)
             {
                 QueueCorpseTransformation(ctx, entity);
