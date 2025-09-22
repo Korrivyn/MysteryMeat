@@ -17,6 +17,7 @@ using KitchenLib.Preferences;
 using PreferenceSystem.Generators;
 using PreferenceSystem;
 using KitchenMysteryMeat.Customs.Cards;
+using KitchenMysteryMeat.Enums;
 
 namespace KitchenMysteryMeat
 {
@@ -47,6 +48,32 @@ namespace KitchenMysteryMeat
         public const string CAUTIOUS_CROWD_ENABLED_ID = "cautiousCrowdEnabled";
         public const string MESSY_MURDER_ENABLED_ID = "messyMurderEnabled";
         public const string PERSISTENT_CORPSES_ENABLED_ID = "persistentCorpsesEnabled";
+        public const string DEBUG_LOG_LEVEL_ID = "debugLogLevel";
+
+        /// <summary>
+        /// Gets the active debug logging level for the mod.
+        /// </summary>
+        public static DebugLogLevel ActiveDebugLogLevel
+        {
+            get
+            {
+                DebugLogLevel activeLevel = DebugLogLevel.Off;
+
+                // Ensures preference lookups only occur when the manager has been initialised.
+                if (PrefManager != null)
+                {
+                    int storedLevel = PrefManager.Get<int>(DEBUG_LOG_LEVEL_ID);
+
+                    // Validates the stored preference before casting it to the debug log level enum.
+                    if (Enum.IsDefined(typeof(DebugLogLevel), storedLevel))
+                    {
+                        activeLevel = (DebugLogLevel)storedLevel;
+                    }
+                }
+
+                return activeLevel;
+            }
+        }
 
         protected override void OnInitialise()
         {
@@ -79,6 +106,18 @@ namespace KitchenMysteryMeat
             });
             int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
             string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
+            int[] debugLogLevelValues = new[]
+            {
+                (int)DebugLogLevel.Off,
+                (int)DebugLogLevel.On,
+                (int)DebugLogLevel.Verbose
+            };
+            string[] debugLogLevelLabels = new[]
+            {
+                "Off",
+                "On",
+                "Verbose"
+            };
             intArrayGenerator.Clear();
 
             PrefManager
@@ -138,6 +177,17 @@ namespace KitchenMysteryMeat
                         [true, false],
                         ["Enabled", "Disabled"]
                     )
+                    .AddSpacer()
+                    .AddSpacer()
+                    .SubmenuDone()
+                // Adds debug settings for controlling log output verbosity.
+                .AddSubmenu("Debug Settings", "DebugSubmenu")
+                    .AddLabel("Debug Settings")
+                    .AddOption<int>(
+                        DEBUG_LOG_LEVEL_ID,
+                        (int)DebugLogLevel.Off,
+                        debugLogLevelValues,
+                        debugLogLevelLabels)
                     .AddSpacer()
                     .AddSpacer()
                     .SubmenuDone()
