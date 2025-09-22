@@ -4,14 +4,22 @@
 
 using Kitchen;
 using KitchenData;
+using KitchenLib.Utils;
 using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
+using KitchenMysteryMeat.Customs.Items;
 using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems.Effects
 {
     public static partial class CorpseEffects
     {
+        // Holds cached corpse mapping IDs so lookups can be reused without repeated GDO queries.
+        private static readonly int CustomerCorpseID = GDOUtils.GetCustomGameDataObject<CustomerCorpse>().ID;
+
+        // Stores the rotten corpse ID used as the transformation target when fresh corpse data is missing.
+        private static readonly int RottenCustomerCorpseID = GDOUtils.GetCustomGameDataObject<RottenCustomerCorpse>().ID;
+
         // Handles illegal corpse item transformation while respecting preservers and logging detailed diagnostics.
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
@@ -38,7 +46,7 @@ namespace KitchenMysteryMeat.Systems.Effects
                     if (itemBlueprint?.Properties != null)
                     {
                         // Iterate through the blueprint properties to locate a valid illegal sight definition.
-                        foreach (IAttachableProperty property in itemBlueprint.Properties)
+                        foreach (IItemProperty property in itemBlueprint.Properties)
                         {
                             if (property is CIllegalSight blueprintIllegal && blueprintIllegal.TurnIntoOnDayStart > 0)
                             {
@@ -61,6 +69,22 @@ namespace KitchenMysteryMeat.Systems.Effects
                 {
                     // Log the inability to resolve the item blueprint so missing data can be traced.
                     LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} item blueprint {itemData.ID} could not be resolved for TurnIntoOnDayStart recovery.");
+                }
+
+                // Attempt to resolve the rotten target through known corpse mappings when the blueprint lacks data.
+                if (!recoveredFromBlueprint && TryResolveKnownCorpseMapping(itemData.ID, out int mappedRottenID))
+                {
+                    illegal.TurnIntoOnDayStart = mappedRottenID;
+                    ctx.Set(entity, illegal);
+                    recoveredFromBlueprint = true;
+                    LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} mapped fresh corpse {itemData.ID} to rotten {mappedRottenID} via known defaults.");
+                }
+
+                // Skip further handling when the item already represents the rotten corpse blueprint.
+                if (!recoveredFromBlueprint && itemData.ID == RottenCustomerCorpseID)
+                {
+                    LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} already uses rotten corpse blueprint {itemData.ID}; decay skipped.");
+                    return;
                 }
 
                 if (!recoveredFromBlueprint)
@@ -166,6 +190,22 @@ namespace KitchenMysteryMeat.Systems.Effects
             // Remove the original corpse item so only the rotten replacement remains.
             ctx.Destroy(entity);
             LogCorpseDebug($"[TransformCorpse] Destroyed original entity {entity.Index} after spawning rotten corpse {newCorpse.Index}.");
+        }
+
+        // Attempts to resolve a rotten corpse ID for known fresh corpse blueprints.
+        private static bool TryResolveKnownCorpseMapping(int itemID, out int rottenID)
+        {
+            // Default the rotten ID before attempting to match against known corpse templates.
+            rottenID = 0;
+
+            // Match the incoming item ID with the fresh corpse blueprint to recover its rotten successor.
+            if (itemID == CustomerCorpseID)
+            {
+                rottenID = RottenCustomerCorpseID;
+                return true;
+            }
+
+            return false;
         }
 
         // Emits debug output through the mod logger when available.
