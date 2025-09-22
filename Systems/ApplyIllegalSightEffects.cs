@@ -5,6 +5,7 @@
 
 using Kitchen;
 using KitchenMods;
+using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Systems.Effects;
 using Unity.Collections;
@@ -14,6 +15,7 @@ namespace KitchenMysteryMeat.Systems
 {
     public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
     {
+        // Invoked at the start of each day to handle illegal item and appliance transitions.
         protected override void OnUpdate()
         {
             // Build query of illegal entities
@@ -24,6 +26,10 @@ namespace KitchenMysteryMeat.Systems
 
             using (NativeArray<Entity> allEntities = query.ToEntityArray(Allocator.Temp))
             {
+                // Log the total number of illegal entities discovered for debugging purposes.
+                Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Processing {allEntities.Length} illegal entities at day start.");
+
+                // Guard: short-circuit when no illegal entities require processing.
                 if (allEntities.Length > 0)
                 {
                     // Create an EntityContext backed by the project's EntityManager
@@ -31,7 +37,27 @@ namespace KitchenMysteryMeat.Systems
 
                     for (int i = allEntities.Length - 1; i >= 0; --i)
                     {
-                        CorpseEffects.TransformCorpse(ctx, allEntities[i]);
+                        Entity entity = allEntities[i];
+
+                        // Emit a debug line for each entity as it is evaluated.
+                        Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Evaluating entity {entity.Index}.");
+
+                        // Handle illegal items by spawning rotten replacements.
+                        if (ctx.Has<CItem>(entity))
+                        {
+                            Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Transforming illegal item entity {entity.Index}.");
+                            CorpseEffects.TransformCorpse(ctx, entity);
+                        }
+                        // Handle illegal appliances that swap to their configured replacements.
+                        else if (ctx.Has<CAppliance>(entity))
+                        {
+                            Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Replacing illegal appliance entity {entity.Index}.");
+                            CorpseEffects.ReplaceWithAppliance(ctx, entity);
+                        }
+                        else
+                        {
+                            Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Entity {entity.Index} lacked item or appliance components.");
+                        }
                     }
                 }
             }

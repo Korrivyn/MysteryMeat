@@ -3,7 +3,7 @@
 // Uses EntityContext (modern API already used in this project) and does not use KitchenData lookups.
 
 using Kitchen;
-using KitchenData;
+using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
 using Unity.Entities;
 
@@ -11,99 +11,126 @@ namespace KitchenMysteryMeat.Systems.Effects
 {
     public static partial class CorpseEffects
     {
-        // Coordinates the corpse transformation process for any entity flagged with illegal sight.
+        // Handles illegal corpse item transformation while respecting preservers and logging detailed diagnostics.
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
-            // Evaluate whether the entity is an item so we can follow the item transformation path.
-            if (ctx.Has<CItem>(entity))
+            // Guard: ensure the entity is an illegal sight item before proceeding.
+            if (!ctx.Has<CIllegalSight>(entity) || !ctx.Has<CItem>(entity))
             {
-                // Route held corpses through the held-item logic to respect preserving containers.
-                if (ctx.Has<CHeldBy>(entity))
+                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} skipped - missing illegal sight or item component.");
+                return;
+            }
+
+            CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
+
+            // Guard: confirm the illegal sight provides a valid rotten replacement.
+            if (illegal.TurnIntoOnDayStart <= 0)
+            {
+                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} skipped - no TurnIntoOnDayStart configured.");
+                return;
+            }
+
+            LogCorpseDebug($"[TransformCorpse] Preparing to rot entity {entity.Index} into item {illegal.TurnIntoOnDayStart}.");
+
+            bool isHeld = ctx.Has<CHeldBy>(entity);
+            CHeldBy heldData = default;
+            Entity holderEntity = Entity.Null;
+
+            // Capture holder data so we can reattach the rotten replacement correctly.
+            if (isHeld)
+            {
+                heldData = ctx.Get<CHeldBy>(entity);
+                holderEntity = heldData.Holder;
+                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} is held by {holderEntity.Index}.");
+            }
+
+            bool skipForPreserver = false;
+
+            // Detect genuine preservers so we avoid rotting items stored in freezers or similar appliances.
+            if (holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity))
+            {
+                bool hadTemporaryPreserver = ctx.Has<CIllegalSightHolderPreserved>(holderEntity) && ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
+                skipForPreserver = !hadTemporaryPreserver;
+
+                if (skipForPreserver)
                 {
-                    QueueHeldCorpseTransformation(ctx, entity);
+                    LogCorpseDebug($"[TransformCorpse] Holder {holderEntity.Index} genuinely preserves contents - decay skipped.");
                 }
                 else
                 {
-                    // Process standalone corpse items that should decay in place.
-                    QueueCorpseTransformation(ctx, entity);
+                    LogCorpseDebug($"[TransformCorpse] Holder {holderEntity.Index} only has a temporary preserver - decay allowed.");
                 }
             }
-            // Delegate to appliance replacement when the illegal entity is an appliance instead of an item.
-            else if (ctx.Has<CAppliance>(entity))
+
+            // Guard: respect genuine preservers even after logging the details.
+            if (skipForPreserver)
             {
-                // Replace appliance corpses that exist as map objects rather than items.
-                ReplaceApplianceCorpses(ctx, entity);
+                return;
             }
-        }
 
-        // Handles corpse items that are stored by another entity so they can decay correctly.
-        private static void QueueHeldCorpseTransformation(EntityContext ctx, Entity entity)
-        {
-            // Retrieve the current holder so we know where the corpse is stored.
-            CHeldBy heldBy = ctx.Get<CHeldBy>(entity);
-            Entity holderEntity = heldBy.Holder;
+            bool hasSplitComponent = ctx.Has<CSplittableItem>(entity);
+            int remainingCount = 0;
+            int totalCount = 0;
 
-            // Determine whether the holder has an active overnight preserver component.
-            bool holderHasOvernightPreserver = holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity);
-
-            // Capture whether the preserver was injected solely for illegal-sight handling.
-            bool holderPreserverIsTemporary = holderHasOvernightPreserver && ctx.Has<CIllegalSightHolderPreserved>(holderEntity) && ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
-
-            // Determine whether the corpse should decay while being held, ignoring temporary preservers.
-            bool shouldTransformWhileHeld = holderEntity == Entity.Null || !holderHasOvernightPreserver || holderPreserverIsTemporary;
-
-            // Queue the standard transformation when the holder cannot preserve its contents or the preserver is temporary.
-            if (shouldTransformWhileHeld)
+            // Preserve portion counts so the rotten corpse inherits the same servings.
+            if (hasSplitComponent)
             {
-                QueueCorpseTransformation(ctx, entity);
+                CSplittableItem split = ctx.Get<CSplittableItem>(entity);
+                remainingCount = split.RemainingCount;
+                totalCount = split.TotalCount;
+                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} portions captured ({remainingCount}/{totalCount}).");
             }
-        }
 
-        // Queues the default corpse transformation on entities that can simply change their item type.
-        private static void QueueCorpseTransformation(EntityContext ctx, Entity entity)
-        {
-            CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
-            // Confirm this corpse is ready to be decayed.
-            if (illegalSight.TurnIntoOnDayStart > 0)
+            Entity newCorpse = ctx.CreateEntity();
+            ctx.Set(newCorpse, new CCreateItem
             {
-                // Add the change marker (CChangeItemType) using the modern context API.
-                ctx.Set(entity, new CChangeItemType { NewID = illegalSight.TurnIntoOnDayStart });
+                ID = illegal.TurnIntoOnDayStart
+            });
+            LogCorpseDebug($"[TransformCorpse] Spawned rotten corpse entity {newCorpse.Index}.");
 
-                // Preserve portions if splittable
-                if (ctx.Has<CSplittableItem>(entity))
+            // Retain portion data if applicable.
+            if (hasSplitComponent)
+            {
+                ctx.Set(newCorpse, new CPersistPortions
                 {
-                    CSplittableItem split = ctx.Get<CSplittableItem>(entity);
-                    ctx.Set(entity, new CPersistPortions
-                    {
-                        RemainingCount = split.RemainingCount,
-                        TotalCount = split.TotalCount
-                    });
-                }
-            }
-        }
-
-        // Replaces corpse appliances placed directly in the world with their rotten variants.
-        private static void ReplaceApplianceCorpses(EntityContext ctx, Entity entity)
-        {
-            CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
-            CPosition pos = ctx.Get<CPosition>(entity);
-
-            // Only attempt to replace the appliance if the data specifies a rotten version.
-            if (illegal.TurnIntoOnDayStart > 0)
-            {
-
-                // Create new appliance entity
-                Entity newEntity = ctx.CreateEntity();
-                ctx.Set(newEntity, new CCreateAppliance
-                {
-                    ID = illegal.TurnIntoOnDayStart,
-                    ForceLayer = OccupancyLayer.Ceiling
+                    RemainingCount = remainingCount,
+                    TotalCount = totalCount
                 });
-                ctx.Set(newEntity, pos);
-
-                // Destroy the original
-                ctx.Destroy(entity);
+                LogCorpseDebug($"[TransformCorpse] Applied CPersistPortions to rotten corpse {newCorpse.Index}.");
             }
+
+            bool hasPosition = ctx.Has<CPosition>(entity);
+
+            // Reattach the new corpse to its previous holder or position.
+            if (holderEntity != Entity.Null)
+            {
+                ctx.Set(newCorpse, heldData);
+
+                // Update the holder so it now references the rotten corpse entity.
+                if (ctx.Has<CItemHolder>(holderEntity))
+                {
+                    CItemHolder holderData = ctx.Get<CItemHolder>(holderEntity);
+                    holderData.HeldItem = newCorpse;
+                    ctx.Set(holderEntity, holderData);
+                    LogCorpseDebug($"[TransformCorpse] Updated holder {holderEntity.Index} to reference rotten corpse {newCorpse.Index}.");
+                }
+            }
+            // Assign the world position when the corpse was resting on the ground.
+            else if (hasPosition)
+            {
+                ctx.Set(newCorpse, ctx.Get<CPosition>(entity));
+                LogCorpseDebug($"[TransformCorpse] Assigned world position to rotten corpse {newCorpse.Index}.");
+            }
+
+            // Remove the original corpse item so only the rotten replacement remains.
+            ctx.Destroy(entity);
+            LogCorpseDebug($"[TransformCorpse] Destroyed original entity {entity.Index} after spawning rotten corpse {newCorpse.Index}.");
+        }
+
+        // Emits debug output through the mod logger when available.
+        private static void LogCorpseDebug(string message)
+        {
+            Mod.Logger?.LogInfo(message);
         }
     }
 }
