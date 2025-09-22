@@ -3,6 +3,7 @@
 // Uses EntityContext (modern API already used in this project) and does not use KitchenData lookups.
 
 using Kitchen;
+using KitchenData;
 using KitchenMysteryMeat.Components;
 using Unity.Entities;
 
@@ -12,17 +13,8 @@ namespace KitchenMysteryMeat.Systems.Effects
     {
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
-            // Confirm if this is a corpse & needs to be rotted.
-            if (ctx.Has<CIllegalSight>(entity))
-            {
-                CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
-                if (illegalSight.TurnIntoOnDayStart > 0)
-                {
-                    QueueCorpseTransformation(ctx, entity, illegalSight);
-                }
-            }
-            // Otherwise, if it has an item, we can check for corpses within. Rot if it doesn't preserve food already anyway.
-            else if (ctx.Has<CItem>(entity))
+            // If this is an item already we check if it's being preserved.
+            if (ctx.Has<CItem>(entity))
             {
                 Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
                 if (holderEntity != null && !ctx.Has<CPreservesContentsOvernight>(holderEntity))
@@ -31,23 +23,83 @@ namespace KitchenMysteryMeat.Systems.Effects
                     QueueCorpseTransformation(ctx, entity, illegalSight);
                 }
             }
+            else // If this is an appliance, we strip out the entity within and return recursively once extracted.
+            if (ctx.Has<CAppliance>(entity)) {
+                ReplaceWithAppliance(ctx, entity);
+            }
+            else // Confirm if this is a corpse & needs to be rotted.
+            if (ctx.Has<CIllegalSight>(entity))
+            {
+                CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
+                Entity holderEntity = Entity.Null;
+                if (ctx.Has<CItem>(entity))
+                {
+                    holderEntity = ctx.Get<CHeldBy>(entity).Holder;
+                    if (holderEntity != Entity.Null)
+                    {
+                        if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
+                        {
+                            QueueCorpseTransformation(ctx, entity, illegalSight);
+                        }
+                    }
+                    else
+                    {
+                        QueueCorpseTransformation(ctx, entity, illegalSight);
+                    }
+                }
+                else
+                {
+                    QueueCorpseTransformation(ctx, entity, illegalSight);
+                }
+            }
         }
 
         private static void QueueCorpseTransformation(EntityContext ctx, Entity entity, CIllegalSight illegalSight)
         {
-            // Add the change marker (CChangeItemType) using the modern context API.
-            ctx.Set(entity, new CChangeItemType { NewID = illegalSight.TurnIntoOnDayStart });
-
-            // Preserve portions if splittable
-            if (ctx.Has<CSplittableItem>(entity))
+            // Confirm this corpse is ready to be decayed.
+            if (illegalSight.TurnIntoOnDayStart > 0)
             {
-                var split = ctx.Get<CSplittableItem>(entity);
-                ctx.Set(entity, new CPersistPortions
+                // Add the change marker (CChangeItemType) using the modern context API.
+                ctx.Set(entity, new CChangeItemType { NewID = illegalSight.TurnIntoOnDayStart });
+
+                // Preserve portions if splittable
+                if (ctx.Has<CSplittableItem>(entity))
                 {
-                    RemainingCount = split.RemainingCount,
-                    TotalCount = split.TotalCount
-                });
+                    var split = ctx.Get<CSplittableItem>(entity);
+                    ctx.Set(entity, new CPersistPortions
+                    {
+                        RemainingCount = split.RemainingCount,
+                        TotalCount = split.TotalCount
+                    });
+                }
             }
+        }
+
+        private static void ReplaceWithAppliance(EntityContext ctx, Entity entity)
+        {
+            if (!ctx.Has<CIllegalSight>(entity))
+                return;
+
+            if (!ctx.Has<CAppliance>(entity) || !ctx.Has<CPosition>(entity))
+                return;
+
+            var illegal = ctx.Get<CIllegalSight>(entity);
+            var pos = ctx.Get<CPosition>(entity);
+
+            if (illegal.TurnIntoOnDayStart <= 0)
+                return;
+
+            // Create new appliance entity
+            Entity newEntity = ctx.CreateEntity();
+            ctx.Set(newEntity, new CCreateAppliance
+            {
+                ID = illegal.TurnIntoOnDayStart,
+                ForceLayer = OccupancyLayer.Ceiling
+            });
+            ctx.Set(newEntity, pos);
+
+            // Destroy the original
+            ctx.Destroy(entity);
         }
     }
 }

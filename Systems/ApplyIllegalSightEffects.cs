@@ -31,16 +31,7 @@ namespace KitchenMysteryMeat.Systems
 
                     for (int i = allEntities.Length - 1; i >= 0; --i)
                     {
-                        Entity e = allEntities[i];
-
-                        if (ctx.Has<CItem>(e))
-                        {
-                            CorpseEffects.TransformCorpse(ctx, e);
-                        }
-                        else if (ctx.Has<CAppliance>(e))
-                        {
-                            CorpseEffects.ReplaceWithAppliance(ctx, e);
-                        }
+                        CorpseEffects.TransformCorpse(ctx, allEntities[i]);
                     }
                 }
             }
