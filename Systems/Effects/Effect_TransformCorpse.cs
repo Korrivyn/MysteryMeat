@@ -6,6 +6,7 @@ using Kitchen;
 using KitchenData;
 using KitchenMysteryMeat.Components;
 using Unity.Entities;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace KitchenMysteryMeat.Systems.Effects
 {
@@ -13,46 +14,46 @@ namespace KitchenMysteryMeat.Systems.Effects
     {
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
-            // If this is an item already we check if it's being preserved.
+            // Any item ready to be transformed.
             if (ctx.Has<CItem>(entity))
             {
-                Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
-                if (holderEntity != null && !ctx.Has<CPreservesContentsOvernight>(holderEntity))
+                // If it's a corpse item on an appliance
+                if (ctx.Has<CAppliance>(entity))
                 {
-                    CIllegalSight illegalSight = ctx.Get<CIllegalSight>(holderEntity);
-                    QueueCorpseTransformation(ctx, entity, illegalSight);
+                    /// TODO: Get the corpse entity from the appliance.
+                    // Remove from the appliance, run through TransformCorpse again.
+                    TransformCorpse(ctx, entity);
                 }
+                QueueUnpreservedCorpses(ctx, entity);
             }
-            else // If this is an appliance, we strip out the entity within and return recursively once extracted.
-            if (ctx.Has<CAppliance>(entity)) {
-                ReplaceWithAppliance(ctx, entity);
+            else // Corpse Appliance on the floor.
+            if (ctx.Has<CIllegalSight>(entity))
+            {
+                ReplaceApplianceCorpses(ctx, entity);
             }
-            else // Confirm if this is a corpse & needs to be rotted.
+        }
+
+        private static void QueueUnpreservedCorpses (EntityContext ctx, Entity entity)
+        {
+            // If this is a corpse specifically.
             if (ctx.Has<CIllegalSight>(entity))
             {
                 CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
-                Entity holderEntity = Entity.Null;
-                if (ctx.Has<CItem>(entity))
+                Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
+                if (holderEntity != Entity.Null)
                 {
-                    holderEntity = ctx.Get<CHeldBy>(entity).Holder;
-                    if (holderEntity != Entity.Null)
+                    if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
                     {
-                        if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
-                        {
-                            QueueCorpseTransformation(ctx, entity, illegalSight);
-                        }
-                    }
-                    else
-                    {
-                        QueueCorpseTransformation(ctx, entity, illegalSight);
+                        QueueCorpseTransformation(ctx, entity, illegalSight); // In a container, but it's not a preserving one.
                     }
                 }
                 else
                 {
-                    QueueCorpseTransformation(ctx, entity, illegalSight);
+                    QueueCorpseTransformation(ctx, entity, illegalSight); // OR Not in any container at all.
                 }
             }
         }
+
 
         private static void QueueCorpseTransformation(EntityContext ctx, Entity entity, CIllegalSight illegalSight)
         {
@@ -65,7 +66,7 @@ namespace KitchenMysteryMeat.Systems.Effects
                 // Preserve portions if splittable
                 if (ctx.Has<CSplittableItem>(entity))
                 {
-                    var split = ctx.Get<CSplittableItem>(entity);
+                    CSplittableItem split = ctx.Get<CSplittableItem>(entity);
                     ctx.Set(entity, new CPersistPortions
                     {
                         RemainingCount = split.RemainingCount,
@@ -75,16 +76,10 @@ namespace KitchenMysteryMeat.Systems.Effects
             }
         }
 
-        private static void ReplaceWithAppliance(EntityContext ctx, Entity entity)
+        private static void ReplaceApplianceCorpses(EntityContext ctx, Entity entity)
         {
-            if (!ctx.Has<CIllegalSight>(entity))
-                return;
-
-            if (!ctx.Has<CAppliance>(entity) || !ctx.Has<CPosition>(entity))
-                return;
-
-            var illegal = ctx.Get<CIllegalSight>(entity);
-            var pos = ctx.Get<CPosition>(entity);
+            CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
+            CPosition pos = ctx.Get<CPosition>(entity);
 
             if (illegal.TurnIntoOnDayStart <= 0)
                 return;
