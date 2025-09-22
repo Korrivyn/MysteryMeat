@@ -77,20 +77,21 @@ namespace KitchenMysteryMeat.Systems.Effects
             CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
             CPosition pos = ctx.Get<CPosition>(entity);
 
-            if (illegal.TurnIntoOnDayStart <= 0)
-                return;
-
-            // Create new appliance entity
-            Entity newEntity = ctx.CreateEntity();
-            ctx.Set(newEntity, new CCreateAppliance
+            if (illegal.TurnIntoOnDayStart > 0)
             {
-                ID = illegal.TurnIntoOnDayStart,
-                ForceLayer = OccupancyLayer.Ceiling
-            });
-            ctx.Set(newEntity, pos);
 
-            // Destroy the original
-            ctx.Destroy(entity);
+                // Create new appliance entity
+                Entity newEntity = ctx.CreateEntity();
+                ctx.Set(newEntity, new CCreateAppliance
+                {
+                    ID = illegal.TurnIntoOnDayStart,
+                    ForceLayer = OccupancyLayer.Ceiling
+                });
+                ctx.Set(newEntity, pos);
+
+                // Destroy the original
+                ctx.Destroy(entity);
+            }
         }
     }
 }
