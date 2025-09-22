@@ -12,6 +12,7 @@ namespace KitchenMysteryMeat.Systems.Effects
 {
     public static partial class CorpseEffects
     {
+        // Entrypoint invoked for every entity that carries the illegal sight marker overnight.
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
             // If this is a corpse on an appliance
@@ -33,15 +34,19 @@ namespace KitchenMysteryMeat.Systems.Effects
             }
         }
 
-        private static void QueueUnpreservedCorpses (EntityContext ctx, Entity entity)
+        // Handles corpses that are held inside another entity, such as counters or containers.
+        private static void QueueUnpreservedCorpses(EntityContext ctx, Entity entity)
         {
             Entity holderEntity = ctx.Get<CHeldBy>(entity).Holder;
             if (holderEntity != Entity.Null)
             {
-                if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
+                // Evaluate whether this holder is allowed to prevent corpses from rotting.
+                if (HolderBlocksCorpseTransformation(ctx, holderEntity))
                 {
-                    QueueCorpseTransformation(ctx, entity); // In a container, but it's not a preserving one.
+                    return;
                 }
+
+                QueueCorpseTransformation(ctx, entity); // In a container, but it's not a preserving one.
             }
             else
             {
@@ -49,7 +54,32 @@ namespace KitchenMysteryMeat.Systems.Effects
             }
         }
 
+        // Determines whether the holder's overnight preservation status should block corpse decay.
+        private static bool HolderBlocksCorpseTransformation(EntityContext ctx, Entity holderEntity)
+        {
+            // Skip early if the holder does not preserve contents overnight.
+            if (!ctx.Has<CPreservesContentsOvernight>(holderEntity))
+            {
+                return false;
+            }
 
+            // Ignore preservation added by the Persistent Corpses status so corpses still rot.
+            if (ctx.Has<CIllegalSightHolderPreserved>(holderEntity))
+            {
+                CIllegalSightHolderPreserved marker = ctx.Get<CIllegalSightHolderPreserved>(holderEntity);
+
+                // Only block rot when the holder originally preserved contents before our override.
+                if (marker.AddedPreserver)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+
+        // Queues the corpse entity to transform into its rotten counterpart on the next frame.
         private static void QueueCorpseTransformation(EntityContext ctx, Entity entity)
         {
             CIllegalSight illegalSight = ctx.Get<CIllegalSight>(entity);
@@ -72,6 +102,7 @@ namespace KitchenMysteryMeat.Systems.Effects
             }
         }
 
+        // Replaces corpse appliances with their rotten versions when no item component exists.
         private static void ReplaceApplianceCorpses(EntityContext ctx, Entity entity)
         {
             CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
