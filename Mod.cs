@@ -64,7 +64,12 @@ namespace KitchenMysteryMeat
             }
         }
 
-        public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, ModVersionString, MOD_GAMEVERSION, Assembly.GetExecutingAssembly()) { }
+        /// <summary>
+        /// Initialises a new instance of the Mystery Meat mod with the configured metadata.
+        /// </summary>
+        public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, ModVersionString, MOD_GAMEVERSION, Assembly.GetExecutingAssembly())
+        {
+        }
 
         public static SoundEvent StabSoundEvent;
         public static SoundEvent PoisonSoundEvent;
@@ -114,14 +119,27 @@ namespace KitchenMysteryMeat
             // Prepare logging and preferences so subsequent operations can query configuration safely.
             bool coreReady = EnsureCoreInitialisation();
 
-            // Guard: abort further setup when the logger or preferences are unavailable.
+            // Resolve the activation context so assets can be loaded during initialisation rather than activation.
+            KitchenMods.Mod activationContext = ResolveActivationContext();
+
+            // Attempt to load the asset bundle immediately to keep runtime hooks from accessing a null bundle.
+            bool assetsReady = EnsureAssetBundle(activationContext);
+
+            // Guard: report when the logger or preferences are unavailable during initialisation.
             if (!coreReady)
             {
                 DebugLogSystem.LogError("Mystery Meat failed to initialise its core systems; runtime registrations have been skipped to avoid inconsistent state.");
             }
-            else
+
+            // Guard: report asset loading failures only when the activation context was available but initialisation still failed.
+            if (!assetsReady && activationContext != null)
             {
-                // Attempt to register runtime hooks so they activate automatically once assets become available.
+                DebugLogSystem.LogError("Mystery Meat failed to initialise its asset bundle; runtime registrations have been skipped to avoid inconsistent state.");
+            }
+
+            if (coreReady && assetsReady)
+            {
+                // Attempt to register runtime hooks so they activate automatically once dependencies are available.
                 TryRegisterRuntimeHooks();
             }
         }
@@ -139,22 +157,26 @@ namespace KitchenMysteryMeat
         /// <param name="mod">The activation context supplied by KitchenLib.</param>
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
-            // Load the asset bundle using the activation context so runtime systems have access to shared resources.
-            bool assetsReady = EnsureAssetBundle(mod);
+            // Capture the activation context in case initialisation occurs before the framework exposes the instance.
+            CacheActivationContext(mod);
 
-            // Refresh core readiness during activation in case initial setup was deferred.
-            bool coreReady = EnsureCoreInitialisation();
-
-            // Guard: report when the core systems could not be initialised so activation issues are surfaced promptly.
-            if (!coreReady)
+            // Guard: refresh the asset bundle if initialisation occurred before the activation context was available.
+            if (Bundle == null)
             {
-                DebugLogSystem.LogError("Mystery Meat failed to initialise its core systems during activation; runtime hooks remain disabled.");
+                EnsureAssetBundle(mod);
             }
 
-            // Guard: display the banner and perform registrations only when both assets and core systems are available.
-            if (assetsReady && coreReady)
+            // Guard: retry runtime hook registration in case assets became available after initialisation completed.
+            TryRegisterRuntimeHooks();
+
+            // Guard: report when the runtime is not ready so the banner reflects the activation status accurately.
+            if (!IsRuntimeReady())
             {
-                TryRegisterRuntimeHooks();
+                DebugLogSystem.LogWarning("Mystery Meat activation completed without fully initialising runtime dependencies; review earlier logs for details.");
+            }
+            else
+            {
+                // Emit the banner once activation has succeeded so players receive confirmation of the mod state.
                 DebugLogSystem.LogInfo(ModLoadedBanner);
             }
         }
@@ -321,16 +343,57 @@ namespace KitchenMysteryMeat
                         TMP_SpriteAsset spriteAsset = Bundle.LoadAsset<TMP_SpriteAsset>("GrindMeat");
 
                         // Guard: register the sprite asset as a fallback only once to avoid duplicate references.
-                        if (spriteAsset != null && !TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Contains(spriteAsset))
-                        {
-                            TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Add(spriteAsset);
-                        }
-
-                        // Guard: configure the sprite asset only when it has been loaded successfully.
                         if (spriteAsset != null)
                         {
-                            spriteAsset.material = UnityEngine.Object.Instantiate(TMP_Settings.defaultSpriteAsset.material);
-                            spriteAsset.material.mainTexture = Bundle.LoadAsset<Texture2D>("GrindMeatTex");
+                            TMP_SpriteAsset defaultSpriteAsset = TMP_Settings.defaultSpriteAsset;
+
+                            // Guard: validate the default sprite asset before attempting to configure fallback resources.
+                            if (defaultSpriteAsset == null)
+                            {
+                                DebugLogSystem.LogWarning("Mystery Meat could not configure TextMeshPro fallbacks because the default sprite asset is unavailable.");
+                            }
+                            else
+                            {
+                                List<TMP_SpriteAsset> fallbackSpriteAssets = defaultSpriteAsset.fallbackSpriteAssets;
+
+                                // Guard: initialise the fallback list when TextMeshPro leaves it null on specific builds.
+                                if (fallbackSpriteAssets == null)
+                                {
+                                    fallbackSpriteAssets = new List<TMP_SpriteAsset>();
+                                    defaultSpriteAsset.fallbackSpriteAssets = fallbackSpriteAssets;
+                                }
+
+                                // Guard: register the sprite asset as a fallback only once to avoid duplicate references.
+                                if (!fallbackSpriteAssets.Contains(spriteAsset))
+                                {
+                                    fallbackSpriteAssets.Add(spriteAsset);
+                                }
+
+                                // Guard: configure the sprite asset only when the default material is available.
+                                if (defaultSpriteAsset.material != null)
+                                {
+                                    spriteAsset.material = UnityEngine.Object.Instantiate(defaultSpriteAsset.material);
+
+                                    // Guard: ensure the grind meat texture exists before applying it to the sprite material.
+                                    Texture2D grindMeatTexture = Bundle.LoadAsset<Texture2D>("GrindMeatTex");
+                                    if (grindMeatTexture != null)
+                                    {
+                                        spriteAsset.material.mainTexture = grindMeatTexture;
+                                    }
+                                    else
+                                    {
+                                        DebugLogSystem.LogWarning("Mystery Meat could not locate the GrindMeat texture within the asset bundle.");
+                                    }
+                                }
+                                else
+                                {
+                                    DebugLogSystem.LogWarning("Mystery Meat skipped sprite material configuration because the default TextMeshPro material is unavailable.");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            DebugLogSystem.LogWarning("Mystery Meat could not locate the GrindMeat sprite asset inside the bundle.");
                         }
 
                         assetsReady = true;
@@ -476,6 +539,13 @@ namespace KitchenMysteryMeat
         /// <param name="gameData">The game data collection that receives the mod-specific sound effects.</param>
         private void SetupSFX(GameData gameData)
         {
+            // Guard: ensure the asset bundle is available before attempting to resolve audio clips.
+            if (Bundle == null)
+            {
+                DebugLogSystem.LogWarning("Mystery Meat skipped SFX setup because the asset bundle is unavailable.");
+                return;
+            }
+
             #region Stab
             StabSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-STAB");
 
@@ -485,16 +555,16 @@ namespace KitchenMysteryMeat
                 gameData.ReferableObjects.Clips.Add(StabSoundEvent, new AudioAssetRandom());
             }
 
-            AudioClip stab1 = Bundle.LoadAsset<AudioClip>("stab-01");
-            stab1.LoadAudioData();
-            AudioClip stab2 = Bundle.LoadAsset<AudioClip>("stab-02");
-            stab2.LoadAudioData();
-            AudioClip stab3 = Bundle.LoadAsset<AudioClip>("stab-03");
-            stab3.LoadAudioData();
+            List<AudioClip> stabClips = new List<AudioClip>();
+
+            // Guard: load each stab clip when available and report missing assets for diagnostics.
+            LoadClipIntoCollection("stab-01", stabClips);
+            LoadClipIntoCollection("stab-02", stabClips);
+            LoadClipIntoCollection("stab-03", stabClips);
 
             typeof(AudioAssetRandom)
                 .GetField("Clips", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(gameData.ReferableObjects.Clips[StabSoundEvent], new List<AudioClip>() { stab1, stab2, stab3 });
+                .SetValue(gameData.ReferableObjects.Clips[StabSoundEvent], stabClips);
             #endregion
 
             #region Poison
@@ -506,12 +576,15 @@ namespace KitchenMysteryMeat
                 gameData.ReferableObjects.Clips.Add(PoisonSoundEvent, new AudioAsset());
             }
 
-            AudioClip poison1 = Bundle.LoadAsset<AudioClip>("blub");
-            poison1.LoadAudioData();
+            AudioClip poison1 = LoadClip("blub");
 
-            typeof(AudioAsset)
-                .GetField("Clip", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(gameData.ReferableObjects.Clips[PoisonSoundEvent], poison1);
+            // Guard: only inject the poison clip when the asset has been resolved successfully.
+            if (poison1 != null)
+            {
+                typeof(AudioAsset)
+                    .GetField("Clip", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(gameData.ReferableObjects.Clips[PoisonSoundEvent], poison1);
+            }
             #endregion
 
             #region Alert
@@ -523,13 +596,133 @@ namespace KitchenMysteryMeat
                 gameData.ReferableObjects.Clips.Add(AlertSoundEvent, new AudioAsset());
             }
 
-            AudioClip alert1 = Bundle.LoadAsset<AudioClip>("alert");
-            alert1.LoadAudioData();
+            AudioClip alert1 = LoadClip("alert");
 
-            typeof(AudioAsset)
-                .GetField("Clip", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(gameData.ReferableObjects.Clips[AlertSoundEvent], alert1);
+            // Guard: only inject the alert clip when the asset has been resolved successfully.
+            if (alert1 != null)
+            {
+                typeof(AudioAsset)
+                    .GetField("Clip", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(gameData.ReferableObjects.Clips[AlertSoundEvent], alert1);
+            }
             #endregion
         }
+
+        /// <summary>
+        /// Loads an audio clip from the asset bundle and appends it to the provided collection when available.
+        /// </summary>
+        /// <param name="assetName">The name of the audio asset to load.</param>
+        /// <param name="clips">The collection receiving the loaded clip.</param>
+        private void LoadClipIntoCollection(string assetName, List<AudioClip> clips)
+        {
+            AudioClip clip = LoadClip(assetName);
+
+            // Guard: only append clips that were resolved successfully.
+            if (clip != null)
+            {
+                clips.Add(clip);
+            }
+        }
+
+        /// <summary>
+        /// Loads an audio clip from the asset bundle while logging when the asset cannot be found.
+        /// </summary>
+        /// <param name="assetName">The name of the audio asset to load.</param>
+        /// <returns>The loaded audio clip when available; otherwise, null.</returns>
+        private AudioClip LoadClip(string assetName)
+        {
+            // Guard: ensure the asset bundle exists before resolving the clip.
+            if (Bundle == null)
+            {
+                DebugLogSystem.LogWarning($"Mystery Meat attempted to load audio clip '{assetName}' without an asset bundle.");
+                return null;
+            }
+
+            AudioClip clip = Bundle.LoadAsset<AudioClip>(assetName);
+
+            // Guard: report missing clips to aid in diagnosing asset regressions.
+            if (clip == null)
+            {
+                DebugLogSystem.LogWarning($"Mystery Meat could not locate audio clip '{assetName}' in the asset bundle.");
+            }
+            else
+            {
+                clip.LoadAudioData();
+            }
+
+            return clip;
+        }
+
+        /// <summary>
+        /// Attempts to resolve the activation context exposed by BaseMod using reflection for initialisation tasks.
+        /// </summary>
+        /// <returns>The activation context when available; otherwise, null.</returns>
+        private KitchenMods.Mod ResolveActivationContext()
+        {
+            KitchenMods.Mod activationContext = null;
+
+            // Guard: attempt to retrieve the activation context from the BaseMod implementation using reflection.
+            if (_activationContextProperty == null)
+            {
+                _activationContextProperty = typeof(BaseMod).GetProperty("Mod", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
+            }
+
+            if (_activationContextProperty != null)
+            {
+                try
+                {
+                    activationContext = _activationContextProperty.GetValue(this) as KitchenMods.Mod;
+                }
+                catch (TargetException)
+                {
+                    DebugLogSystem.LogVerbose("Mystery Meat could not access the activation context property via reflection.");
+                }
+            }
+
+            // Guard: fall back to the cached activation context when reflection does not expose it.
+            if (activationContext == null)
+            {
+                activationContext = _cachedActivationContext;
+            }
+
+            // Guard: log verbose details only once when the context cannot be resolved during initialisation.
+            if (activationContext == null && !_activationContextWarningLogged)
+            {
+                DebugLogSystem.LogVerbose("Mystery Meat could not resolve the activation context during OnInitialise; asset loading will retry after activation.");
+                _activationContextWarningLogged = true;
+            }
+
+            return activationContext;
+        }
+
+        /// <summary>
+        /// Caches the activation context for scenarios where OnInitialise executes before BaseMod exposes the instance.
+        /// </summary>
+        /// <param name="mod">The activation context supplied by KitchenLib.</param>
+        private void CacheActivationContext(KitchenMods.Mod mod)
+        {
+            // Guard: ignore caching when the activation context has not been supplied.
+            if (mod == null)
+            {
+                return;
+            }
+
+            _cachedActivationContext = mod;
+        }
+
+        /// <summary>
+        /// Stores the reflection metadata used to resolve the BaseMod activation context.
+        /// </summary>
+        private static PropertyInfo _activationContextProperty;
+
+        /// <summary>
+        /// Tracks whether the activation context warning has been logged to avoid repeated spam.
+        /// </summary>
+        private static bool _activationContextWarningLogged;
+
+        /// <summary>
+        /// Caches the activation context provided during activation for initialisation retries.
+        /// </summary>
+        private static KitchenMods.Mod _cachedActivationContext;
     }
 }
