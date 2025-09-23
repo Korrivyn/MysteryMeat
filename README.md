@@ -1,4 +1,13 @@
-# MysteryMeat
+      _____         _                    ⠀⠀⠀⠀⠀⠀⠀⢀⣠⡶⠶⣦⣄⠀ ⠀⢀⣴⣿⣷⡄
+     |     |_ _ ___| |_ ___ ___ _ _    ⠀⠀⠀⠀⠀⠀⣠⣴⣿⣿⡇⡖⠂⠙⠗⣠⣾⣿⣿⣿⣥⣀
+     | | | | | |_ -|  _| -_|  _| | |  ⠀⢀⣀⣠⣤⣶⣿⣿⣿⣿⣿⣇⢣⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⠇
+     |_|_|_|_  |___|_| |___|_| |_  |  ⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡌⢧⠘⠿⠟⠛⣉⠉
+           |___|               |___|  ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣌⠳⣄⠀⠀⣿⡀
+         _____         _     ⠀⠀⠀⠀⠀    ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣌⣉⣁⡿
+        |     |___ ___| |_       ⢀⣤⣤⣤⣤⡀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠛⠉
+        | | | | -_| .'|  _|     ⠀⢻⣿⣿⣿⣿⣷⡀⠹⣿⣿⣿⣿⣿⣿⣿⣿⠟⠋⠁
+        |_|_|_|___|__,|_|   ⠀    ⠀⠉⢩⣿⣿⣿⠋⠀⠈⠻⢿⣿⣿⣿⠋⠁⠀⠀⠀⠀v0.3.2
+           by QuackAndCheese      ⠀⠸⣿⡿⠁⠀⠀⠀⠀⠀⠈⠉⠁
 
 ## Local build setup
 
@@ -25,4 +34,4 @@ Install the listed mods via the Steam Workshop, ensuring the directory names abo
 ## Documentation
 
 - [Feature Catalog](FEATURES.md)
-- [Mystery Meat QA Rubric](QA_RUBRIC.md)
+- [QA Rubric](QA_RUBRIC.md)
