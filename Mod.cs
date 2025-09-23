@@ -34,6 +34,7 @@ namespace KitchenMysteryMeat
 
         internal static AssetBundle Bundle;
         internal static KitchenLogger Logger;
+        private static bool _buildGameDataSubscribed;
 
         /// <summary>
         /// Gets the ASCII art banner displayed when the mod is initialised.
@@ -105,12 +106,18 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
-        /// Handles initial mod setup and displays the load notification banner.
+        /// Handles initial mod setup and prepares logging and preferences ahead of activation.
         /// </summary>
         protected override void OnInitialise()
         {
-            // Emit a startup info post through the debug helper so it respects the configured verbosity.
-            DebugLogSystem.LogInfo(ModLoadedBanner);
+            // Attempt to prepare logging, preferences, and assets that do not require the activation context.
+            bool isReady = EnsureInitialisation(null);
+
+            // Guard: log that asset loading will complete during activation when not all systems are ready yet.
+            if (!isReady)
+            {
+                DebugLogSystem.LogVerbose("Initial asset loading deferred until activation because the mod context has not been supplied.");
+            }
         }
 
         /// <summary>
@@ -125,135 +132,242 @@ namespace KitchenMysteryMeat
         /// </summary>
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
-            Bundle = mod.GetPacks<AssetBundleModPack>().SelectMany(e => e.AssetBundles).FirstOrDefault() ?? throw new MissingAssetBundleException(MOD_GUID);
-            Logger = InitLogger();
+            // Validate the full initialisation sequence using the activation context supplied by the framework.
+            bool isReady = EnsureInitialisation(mod);
 
-            // Initialise the debug helper immediately so all subsequent log calls share the same configuration.
+            // Guard: abort runtime registrations when the initialisation failed to acquire assets or preferences.
+            if (!isReady)
+            {
+                DebugLogSystem.LogError("Mystery Meat initialisation failed; runtime hooks and event subscriptions have been skipped to avoid null reference issues.");
+            }
+            else
+            {
+                // Emit a startup info post through the debug helper so it respects the configured verbosity.
+                DebugLogSystem.LogInfo(ModLoadedBanner);
+
+                // Collates enabled card registrations so duplicate preference checks are avoided.
+                (bool IsEnabled, Action RegisterCard)[] cardRegistrations =
+                {
+                    (PrefManager.Get<bool>(CAUTIOUS_CROWD_ENABLED_ID), () => AddGameDataObject<CautiousCrowdCard>()),
+                    (PrefManager.Get<bool>(MESSY_MURDER_ENABLED_ID), () => AddGameDataObject<MessyMurderCard>()),
+                    (PrefManager.Get<bool>(PERSISTENT_CORPSES_ENABLED_ID), () => AddGameDataObject<PersistentCorpsesCard>())
+                };
+
+                // Register each enabled card so gameplay content matches the configured preferences.
+                foreach ((bool IsEnabled, Action RegisterCard) cardRegistration in cardRegistrations)
+                {
+                    // Guard: only register the card when the associated preference is enabled.
+                    if (cardRegistration.IsEnabled)
+                    {
+                        cardRegistration.RegisterCard();
+                    }
+                }
+
+                // Guard: subscribe to the build event only once all assets are ready and the handler has not been registered.
+                if (!_buildGameDataSubscribed && IsRuntimeReady())
+                {
+                    Events.BuildGameDataEvent += OnBuildGameData;
+                    _buildGameDataSubscribed = true;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Ensures the mod logger, preferences, and assets are prepared for runtime use.
+        /// </summary>
+        /// <param name="mod">The activation context that exposes asset bundles when available.</param>
+        /// <returns>True when the assets and preferences required for runtime hooks are ready.</returns>
+        private bool EnsureInitialisation(KitchenMods.Mod mod)
+        {
+            // Ensure the logger exists so subsequent operations can emit diagnostics.
+            if (Logger == null)
+            {
+                Logger = InitLogger();
+            }
+
+            // Align the debug helper with the active logger reference even when the logger was already available.
             DebugLogSystem.Initialise(Logger, () => ActiveDebugLogLevel);
 
-            Bundle.LoadAllAssets<Texture2D>();
-            Bundle.LoadAllAssets<Sprite>();
-            var spriteAsset = Bundle.LoadAsset<TMP_SpriteAsset>("GrindMeat");
-            TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Add(spriteAsset);
-            spriteAsset.material = UnityEngine.Object.Instantiate(TMP_Settings.defaultSpriteAsset.material);
-            spriteAsset.material.mainTexture = Bundle.LoadAsset<Texture2D>("GrindMeatTex");
-
-            #region Preferences
-            PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
-
-            IntArrayGenerator intArrayGenerator = new IntArrayGenerator();
-            intArrayGenerator.AddRange(0, 100, 10, null, delegate (string prefKey, int value)
+            // Guard: skip preference construction when the manager has already been initialised.
+            if (PrefManager == null)
             {
-                return $"{value}%";
-            });
-            int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
-            string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
-            int[] debugLogLevelValues = new[]
-            {
-                (int)DebugLogLevel.Off,
-                (int)DebugLogLevel.On,
-                (int)DebugLogLevel.Verbose
-            };
-            string[] debugLogLevelLabels = new[]
-            {
-                "Off",
-                "On",
-                "Verbose"
-            };
-            intArrayGenerator.Clear();
+                IntArrayGenerator intArrayGenerator = new IntArrayGenerator();
 
-            PrefManager
-                .AddLabel("Mystery Meat")
+                // Generates percentage values for shared audio preference controls.
+                intArrayGenerator.AddRange(0, 100, 10, null, delegate (string prefKey, int value)
+                {
+                    return $"{value}%";
+                });
+
+                int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
+                string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
+                int[] debugLogLevelValues =
+                {
+                    (int)DebugLogLevel.Off,
+                    (int)DebugLogLevel.On,
+                    (int)DebugLogLevel.Verbose
+                };
+                string[] debugLogLevelLabels =
+                {
+                    "Off",
+                    "On",
+                    "Verbose"
+                };
+                intArrayGenerator.Clear();
+
+                PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
+
+                PrefManager
+                    .AddLabel("Mystery Meat")
+                    .AddSpacer()
+                    .AddSubmenu("Audio Settings", "AudioSubmenu")
+                        .AddLabel("Audio Settings")
+                        .AddSpacer()
+                        .AddLabel("Meat Grinder Volume")
+                        .AddOption<int>(
+                            MEAT_GRINDER_VOLUME_ID,
+                            50,
+                            zeroToHundredPercentValues,
+                            zeroToHundredPercentStrings)
+                        .AddLabel("Stab Volume")
+                        .AddOption<int>(
+                            STAB_VOLUME_ID,
+                            50,
+                            zeroToHundredPercentValues,
+                            zeroToHundredPercentStrings)
+                        .AddLabel("Suspicion Volume")
+                        .AddOption<int>(
+                            SUSPICION_VOLUME_ID,
+                            50,
+                            zeroToHundredPercentValues,
+                            zeroToHundredPercentStrings)
+                        .AddLabel("Alert Volume")
+                        .AddOption<int>(
+                            ALERT_VOLUME_ID,
+                            50,
+                            zeroToHundredPercentValues,
+                            zeroToHundredPercentStrings)
+                        .AddSpacer()
+                        .AddSpacer()
+                        .SubmenuDone()
+                    .AddSubmenu("Card Settings", "CardSubmenu")
+                        .AddLabel("Card Settings")
+                        .AddInfo("Any changes require a restart.")
+                        .AddLabel("Cautious Crowd")
+                        .AddOption<bool>(
+                            CAUTIOUS_CROWD_ENABLED_ID,
+                            true,
+                            [true, false],
+                            ["Enabled", "Disabled"]
+                        )
+                        .AddLabel("Messy Murder")
+                        .AddOption<bool>(
+                            MESSY_MURDER_ENABLED_ID,
+                            true,
+                            [true, false],
+                            ["Enabled", "Disabled"]
+                        )
+                        .AddLabel("Persistent Corpses")
+                        .AddOption<bool>(
+                            PERSISTENT_CORPSES_ENABLED_ID,
+                            true,
+                            [true, false],
+                            ["Enabled", "Disabled"]
+                        )
+                        .AddSpacer()
+                        .AddSpacer()
+                        .SubmenuDone()
+                    // Adds debug settings for controlling log output verbosity.
+                    .AddSubmenu("Debug Settings", "DebugSubmenu")
+                        .AddLabel("Debug Settings")
+                        .AddOption<int>(
+                            DEBUG_LOG_LEVEL_ID,
+                            (int)DebugLogLevel.Off,
+                            debugLogLevelValues,
+                            debugLogLevelLabels)
+                        .AddSpacer()
+                        .AddSpacer()
+                        .SubmenuDone()
                 .AddSpacer()
-                .AddSubmenu("Audio Settings", "AudioSubmenu")
-                    .AddLabel("Audio Settings")
-                    .AddSpacer()
-                    .AddLabel("Meat Grinder Volume")
-                    .AddOption<int>(
-                        MEAT_GRINDER_VOLUME_ID,
-                        50,
-                        zeroToHundredPercentValues,
-                        zeroToHundredPercentStrings)
-                    .AddLabel("Stab Volume")
-                    .AddOption<int>(
-                        STAB_VOLUME_ID,
-                        50,
-                        zeroToHundredPercentValues,
-                        zeroToHundredPercentStrings)
-                    .AddLabel("Suspicion Volume")
-                    .AddOption<int>(
-                        SUSPICION_VOLUME_ID,
-                        50,
-                        zeroToHundredPercentValues,
-                        zeroToHundredPercentStrings)
-                    .AddLabel("Alert Volume")
-                    .AddOption<int>(
-                        ALERT_VOLUME_ID,
-                        50,
-                        zeroToHundredPercentValues,
-                        zeroToHundredPercentStrings)
-                    .AddSpacer()
-                    .AddSpacer()
-                    .SubmenuDone()
-                .AddSubmenu("Card Settings", "CardSubmenu")
-                    .AddLabel("Card Settings")
-                    .AddInfo("Any changes require a restart.")
-                    .AddLabel("Cautious Crowd")
-                    .AddOption<bool>(
-                        CAUTIOUS_CROWD_ENABLED_ID,
-                        true,
-                        [true, false],
-                        ["Enabled", "Disabled"]
-                    )
-                    .AddLabel("Messy Murder")
-                    .AddOption<bool>(
-                        MESSY_MURDER_ENABLED_ID,
-                        true,
-                        [true, false],
-                        ["Enabled", "Disabled"]
-                    )
-                    .AddLabel("Persistent Corpses")
-                    .AddOption<bool>(
-                        PERSISTENT_CORPSES_ENABLED_ID,
-                        true,
-                        [true, false],
-                        ["Enabled", "Disabled"]
-                    )
-                    .AddSpacer()
-                    .AddSpacer()
-                    .SubmenuDone()
-                // Adds debug settings for controlling log output verbosity.
-                .AddSubmenu("Debug Settings", "DebugSubmenu")
-                    .AddLabel("Debug Settings")
-                    .AddOption<int>(
-                        DEBUG_LOG_LEVEL_ID,
-                        (int)DebugLogLevel.Off,
-                        debugLogLevelValues,
-                        debugLogLevelLabels)
-                    .AddSpacer()
-                    .AddSpacer()
-                    .SubmenuDone()
-            .AddSpacer()
-            .AddSpacer();
+                .AddSpacer();
 
-            PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
-            #endregion
-
-            if (Mod.PrefManager.Get<bool>(CAUTIOUS_CROWD_ENABLED_ID))
-            {
-                AddGameDataObject<CautiousCrowdCard>();
-            }
-            if (Mod.PrefManager.Get<bool>(MESSY_MURDER_ENABLED_ID))
-            {
-                AddGameDataObject<MessyMurderCard>();
-            }
-            if (Mod.PrefManager.Get<bool>(PERSISTENT_CORPSES_ENABLED_ID))
-            {
-                AddGameDataObject<PersistentCorpsesCard>();
+                PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
             }
 
+            // Determine whether the asset bundle requires loading and whether the activation context is available.
+            bool assetsReady = Bundle != null;
 
-            Events.BuildGameDataEvent += delegate (object s, BuildGameDataEventArgs args)
+            // Guard: attempt to load the asset bundle when it has not been resolved and the activation context is available.
+            if (!assetsReady && mod != null)
+            {
+                AssetBundle resolvedBundle = mod
+                    .GetPacks<AssetBundleModPack>()
+                    .SelectMany(pack => pack.AssetBundles)
+                    .FirstOrDefault();
+
+                // Guard: confirm the asset bundle has been found before attempting to cache it.
+                if (resolvedBundle != null)
+                {
+                    Bundle = resolvedBundle;
+
+                    // Preload commonly used assets so runtime lookups occur without additional I/O.
+                    Bundle.LoadAllAssets<Texture2D>();
+                    Bundle.LoadAllAssets<Sprite>();
+
+                    TMP_SpriteAsset spriteAsset = Bundle.LoadAsset<TMP_SpriteAsset>("GrindMeat");
+
+                    // Guard: register the sprite asset as a fallback only once to avoid duplicate references.
+                    if (spriteAsset != null && !TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Contains(spriteAsset))
+                    {
+                        TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Add(spriteAsset);
+                    }
+
+                    // Guard: configure the sprite asset only when it has been loaded successfully.
+                    if (spriteAsset != null)
+                    {
+                        spriteAsset.material = UnityEngine.Object.Instantiate(TMP_Settings.defaultSpriteAsset.material);
+                        spriteAsset.material.mainTexture = Bundle.LoadAsset<Texture2D>("GrindMeatTex");
+                    }
+
+                    assetsReady = true;
+                }
+                else
+                {
+                    DebugLogSystem.LogError("Mystery Meat could not locate its asset bundle during activation; audio registration will be skipped.");
+                }
+            }
+
+            assetsReady = Bundle != null;
+            bool isReady = assetsReady && PrefManager != null;
+            return isReady;
+        }
+
+        /// <summary>
+        /// Indicates whether runtime hooks can be safely registered based on asset and preference readiness.
+        /// </summary>
+        /// <returns>True when both the asset bundle and preference manager have been initialised.</returns>
+        private static bool IsRuntimeReady()
+        {
+            bool hasAssets = Bundle != null;
+            bool hasPreferences = PrefManager != null;
+
+            bool isReady = hasAssets && hasPreferences;
+            return isReady;
+        }
+
+        /// <summary>
+        /// Handles BuildGameData event invocations once activation has succeeded.
+        /// </summary>
+        /// <param name="sender">The event source supplied by the framework.</param>
+        /// <param name="args">The event arguments containing the game data instance.</param>
+        private void OnBuildGameData(object sender, BuildGameDataEventArgs args)
+        {
+            // Guard: ensure runtime dependencies remain available before applying game data modifications.
+            if (!IsRuntimeReady())
+            {
+                DebugLogSystem.LogWarning("BuildGameDataEvent triggered before Mystery Meat finished initialising; the handler execution has been skipped.");
+            }
+            else
             {
                 //((Item)GDOUtils.GetExistingGDO(ItemReferences.SharpKnife)).Properties.Add(new CKillsCustomer());
                 ((Item)GDOUtils.GetExistingGDO(ItemReferences.Mince)).DerivedProcesses.Add(new Item.ItemProcess()
@@ -264,7 +378,7 @@ namespace KitchenMysteryMeat
                 });
 
                 SetupSFX(args.gamedata);
-            };
+            }
         }
         
         /// <summary>
@@ -276,12 +390,18 @@ namespace KitchenMysteryMeat
             #region Stab
             StabSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-STAB");
 
+            // Guard: ensure the stab clip slot exists before injecting the audio assets.
             if (!gameData.ReferableObjects.Clips.ContainsKey(StabSoundEvent))
+            {
                 gameData.ReferableObjects.Clips.Add(StabSoundEvent, new AudioAssetRandom());
+            }
 
-            var stab1 = Bundle.LoadAsset<AudioClip>("stab-01"); stab1.LoadAudioData();
-            var stab2 = Bundle.LoadAsset<AudioClip>("stab-02"); stab2.LoadAudioData();
-            var stab3 = Bundle.LoadAsset<AudioClip>("stab-03"); stab3.LoadAudioData();
+            AudioClip stab1 = Bundle.LoadAsset<AudioClip>("stab-01");
+            stab1.LoadAudioData();
+            AudioClip stab2 = Bundle.LoadAsset<AudioClip>("stab-02");
+            stab2.LoadAudioData();
+            AudioClip stab3 = Bundle.LoadAsset<AudioClip>("stab-03");
+            stab3.LoadAudioData();
 
             typeof(AudioAssetRandom)
                 .GetField("Clips", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -291,10 +411,14 @@ namespace KitchenMysteryMeat
             #region Poison
             PoisonSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-POISON");
 
+            // Guard: ensure the poison clip slot exists before injecting the audio asset.
             if (!gameData.ReferableObjects.Clips.ContainsKey(PoisonSoundEvent))
+            {
                 gameData.ReferableObjects.Clips.Add(PoisonSoundEvent, new AudioAsset());
+            }
 
-            var poison1 = Bundle.LoadAsset<AudioClip>("blub"); poison1.LoadAudioData();
+            AudioClip poison1 = Bundle.LoadAsset<AudioClip>("blub");
+            poison1.LoadAudioData();
 
             typeof(AudioAsset)
                 .GetField("Clip", BindingFlags.Instance | BindingFlags.NonPublic)
@@ -304,10 +428,14 @@ namespace KitchenMysteryMeat
             #region Alert
             AlertSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-ALERT");
 
+            // Guard: ensure the alert clip slot exists before injecting the audio asset.
             if (!gameData.ReferableObjects.Clips.ContainsKey(AlertSoundEvent))
+            {
                 gameData.ReferableObjects.Clips.Add(AlertSoundEvent, new AudioAsset());
+            }
 
-            var alert1 = Bundle.LoadAsset<AudioClip>("alert"); alert1.LoadAudioData();
+            AudioClip alert1 = Bundle.LoadAsset<AudioClip>("alert");
+            alert1.LoadAudioData();
 
             typeof(AudioAsset)
                 .GetField("Clip", BindingFlags.Instance | BindingFlags.NonPublic)
