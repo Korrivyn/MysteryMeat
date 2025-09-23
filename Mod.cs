@@ -107,7 +107,7 @@ namespace KitchenMysteryMeat
         /// </summary>
         protected override void OnInitialise()
         {
-            Logger.LogWarning(ModLoadedBanner);
+            Logger.LogInfo(ModLoadedBanner);
         }
 
         /// <summary>
