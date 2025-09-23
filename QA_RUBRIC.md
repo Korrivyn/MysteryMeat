@@ -3,6 +3,16 @@
 
 # Mystery Meat QA Rubric
 
+## Navigation
+- [1. Mod Configuration and Preference Checks](#mod-configuration-and-preference-checks)
+- [2. Murder Loop and Gore Generation](#murder-loop-and-gore-generation)
+- [3. Suspicion, Alerts, and Loss Conditions](#suspicion-alerts-and-loss-conditions)
+- [4. Illegal Sight Persistence and Overnight Behaviour](#illegal-sight-persistence-and-overnight-behaviour)
+- [5. Special Sauce Lifecycle](#special-sauce-lifecycle)
+- [6. Poisoning Flow](#poisoning-flow)
+- [7. Meat Processing and Dish Coverage](#meat-processing-and-dish-coverage)
+
+<a id="mod-configuration-and-preference-checks"></a>
 ## 1. Mod Configuration and Preference Checks [🔝](#top)
 - **Test: Mystery Meat preference page exposes all controls.**
   - Steps:
@@ -36,6 +46,7 @@
     - No Mystery Meat debug chatter appears when set to Off.
     - Informational and verbose notes appear after elevating the preference.
 
+<a id="murder-loop-and-gore-generation"></a>
 ## 2. Murder Loop and Gore Generation [🔝](#top)
 - **Test: Meat Cleaver kills diners in every seating state.**
   - Steps:
@@ -64,6 +75,7 @@
     - Orders tied to dead members disappear.
     - The group indicator despawns after all members are dead or have left.
 
+<a id="suspicion-alerts-and-loss-conditions"></a>
 ## 3. Suspicion, Alerts, and Loss Conditions [🔝](#top)
 - **Test: Suspicion indicator attaches to every new diner.**
   - Steps:
@@ -94,6 +106,7 @@
   - Expected Results:
     - The run loses a life immediately upon exit and the diner despawns.
 
+<a id="illegal-sight-persistence-and-overnight-behaviour"></a>
 ## 4. Illegal Sight Persistence and Overnight Behaviour [🔝](#top)
 - **Test: Corpses rot without Persistent Corpses.**
   - Steps:
@@ -122,6 +135,7 @@
   - Expected Results:
     - The trash bag still contains the carcass next day, and the bag visuals reflect the filled state.
 
+<a id="special-sauce-lifecycle"></a>
 ## 5. Special Sauce Lifecycle [🔝](#top)
 - **Test: Empty bottles fill from fresh blood.**
   - Steps:
@@ -147,6 +161,7 @@
   - Expected Results:
     - The bottle converts to the empty version and can be refilled from blood puddles.
 
+<a id="poisoning-flow"></a>
 ## 6. Poisoning Flow [🔝](#top)
 - **Test: Manual poisoning contaminates held food.**
   - Steps:
@@ -169,6 +184,7 @@
   - Expected Results:
     - The second attempt does not replay the sound or alter the item further.
 
+<a id="meat-processing-and-dish-coverage"></a>
 ## 7. Meat Processing and Dish Coverage [🔝](#top)
 - **Test: Grindable items feed both grinders.**
   - Steps:
