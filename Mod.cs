@@ -35,6 +35,7 @@ namespace KitchenMysteryMeat
         internal static AssetBundle Bundle;
         internal static KitchenLogger Logger;
         private static bool _buildGameDataSubscribed;
+        private static bool _cardsRegistered;
 
         /// <summary>
         /// Gets the ASCII art banner displayed when the mod is initialised.
@@ -106,7 +107,7 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
-        /// Handles initial mod setup by preparing core systems, registering cards, and subscribing to runtime hooks.
+        /// Handles initial mod setup by preparing core systems and queuing runtime hook registration.
         /// </summary>
         protected override void OnInitialise()
         {
@@ -120,11 +121,8 @@ namespace KitchenMysteryMeat
             }
             else
             {
-                // Register enabled cards during initialisation so gameplay reflects the configured preferences immediately.
-                RegisterEnabledCards();
-
-                // Subscribe to BuildGameData once so later activation phases can safely supply assets.
-                SubscribeToBuildGameDataEvent();
+                // Attempt to register runtime hooks so they activate automatically once assets become available.
+                TryRegisterRuntimeHooks();
             }
         }
 
@@ -136,7 +134,7 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
-        /// Handles post-activation duties by ensuring assets are available and displaying the mod banner.
+        /// Handles post-activation duties by ensuring assets are available, completing runtime registration, and displaying the mod banner.
         /// </summary>
         /// <param name="mod">The activation context supplied by KitchenLib.</param>
         protected override void OnPostActivate(KitchenMods.Mod mod)
@@ -144,21 +142,23 @@ namespace KitchenMysteryMeat
             // Load the asset bundle using the activation context so runtime systems have access to shared resources.
             bool assetsReady = EnsureAssetBundle(mod);
 
-            // Guard: display the banner only when assets are ready to prevent misleading confirmation messages.
-            if (assetsReady)
-            {
-                DebugLogSystem.LogInfo(ModLoadedBanner);
+            // Refresh core readiness during activation in case initial setup was deferred.
+            bool coreReady = EnsureCoreInitialisation();
 
-                // Ensure event subscriptions occur once activation has provided the required assets.
-                SubscribeToBuildGameDataEvent();
+            // Guard: report when the core systems could not be initialised so activation issues are surfaced promptly.
+            if (!coreReady)
+            {
+                DebugLogSystem.LogError("Mystery Meat failed to initialise its core systems during activation; runtime hooks remain disabled.");
+            }
+
+            // Guard: display the banner and perform registrations only when both assets and core systems are available.
+            if (assetsReady && coreReady)
+            {
+                TryRegisterRuntimeHooks();
+                DebugLogSystem.LogInfo(ModLoadedBanner);
             }
         }
 
-        /// <summary>
-        /// Ensures the mod logger, preferences, and assets are prepared for runtime use.
-        /// </summary>
-        /// <param name="mod">The activation context that exposes asset bundles when available.</param>
-        /// <returns>True when the assets and preferences required for runtime hooks are ready.</returns>
         /// <summary>
         /// Ensures the mod logger and preference manager are available before runtime hooks are registered.
         /// </summary>
@@ -377,6 +377,32 @@ namespace KitchenMysteryMeat
                         DebugLogSystem.LogVerbose($"Registered Mystery Meat card using preference '{cardRegistration.PreferenceId}'.");
                     }
                 }
+            }
+        }
+
+        /// <summary>
+        /// Attempts to register runtime hooks such as cards and game data subscriptions when dependencies are ready.
+        /// </summary>
+        private void TryRegisterRuntimeHooks()
+        {
+            bool runtimeReady = IsRuntimeReady();
+
+            // Guard: defer registration until both assets and preferences are available.
+            if (!runtimeReady)
+            {
+                DebugLogSystem.LogVerbose("Mystery Meat deferred runtime hook registration because assets or preferences are still initialising.");
+            }
+            else
+            {
+                // Guard: register cards only once per activation to avoid duplicate game data objects.
+                if (!_cardsRegistered)
+                {
+                    RegisterEnabledCards();
+                    _cardsRegistered = true;
+                }
+
+                // Ensure BuildGameData subscriptions occur once runtime dependencies are confirmed ready.
+                SubscribeToBuildGameDataEvent();
             }
         }
 
