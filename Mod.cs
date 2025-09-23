@@ -62,7 +62,12 @@ namespace KitchenMysteryMeat
             }
         }
 
-        public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, ModVersionString, MOD_GAMEVERSION, Assembly.GetExecutingAssembly()) { }
+        /// <summary>
+        /// Initialises the mod base class with the Mystery Meat metadata and assembly reference.
+        /// </summary>
+        public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, ModVersionString, MOD_GAMEVERSION, Assembly.GetExecutingAssembly())
+        {
+        }
 
         public static SoundEvent StabSoundEvent;
         public static SoundEvent PoisonSoundEvent;
@@ -91,6 +96,8 @@ namespace KitchenMysteryMeat
 
                 // Guard: skip preference lookups until the manager has been initialised by the mod bootstrap sequence.
                 PreferenceSystemManager manager = PrefManager;
+
+                // Guard: only inspect stored preferences once the manager reference exists.
                 if (manager != null)
                 {
                     int storedLevel = (int)DebugLogLevel.Off;
@@ -255,14 +262,17 @@ namespace KitchenMysteryMeat
             PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
             #endregion
 
+            // Enable the cautious crowd card when the player leaves the toggle enabled.
             if (Mod.PrefManager.Get<bool>(CAUTIOUS_CROWD_ENABLED_ID))
             {
                 AddGameDataObject<CautiousCrowdCard>();
             }
+            // Enable the messy murder card when the corresponding preference remains active.
             if (Mod.PrefManager.Get<bool>(MESSY_MURDER_ENABLED_ID))
             {
                 AddGameDataObject<MessyMurderCard>();
             }
+            // Enable persistent corpses when players opt into the gameplay variant.
             if (Mod.PrefManager.Get<bool>(PERSISTENT_CORPSES_ENABLED_ID))
             {
                 AddGameDataObject<PersistentCorpsesCard>();
@@ -283,11 +293,16 @@ namespace KitchenMysteryMeat
             };
         }
         
+        /// <summary>
+        /// Registers stab, poison, and alert audio assets so the mod can trigger them at runtime.
+        /// </summary>
+        /// <param name="gameData">The active game data used to register clip references.</param>
         private void SetupSFX(GameData gameData)
         {
             #region Stab
             StabSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-STAB");
 
+            // Guard: register the stab clip collection once per session to avoid duplicate entries.
             if (!gameData.ReferableObjects.Clips.ContainsKey(StabSoundEvent))
                 gameData.ReferableObjects.Clips.Add(StabSoundEvent, new AudioAssetRandom());
 
@@ -303,6 +318,7 @@ namespace KitchenMysteryMeat
             #region Poison
             PoisonSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-POISON");
 
+            // Guard: create the poison clip asset when it has not yet been attached to the referable objects list.
             if (!gameData.ReferableObjects.Clips.ContainsKey(PoisonSoundEvent))
                 gameData.ReferableObjects.Clips.Add(PoisonSoundEvent, new AudioAsset());
 
@@ -316,6 +332,7 @@ namespace KitchenMysteryMeat
             #region Alert
             AlertSoundEvent = (SoundEvent)VariousUtils.GetID(MOD_GUID + "-ALERT");
 
+            // Guard: ensure the alert clip only registers once when the mod initialises the audio assets.
             if (!gameData.ReferableObjects.Clips.ContainsKey(AlertSoundEvent))
                 gameData.ReferableObjects.Clips.Add(AlertSoundEvent, new AudioAsset());
 

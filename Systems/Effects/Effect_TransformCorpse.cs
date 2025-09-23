@@ -30,23 +30,31 @@ namespace KitchenMysteryMeat.Systems.Effects
         /// </summary>
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
+            bool shouldTransform = true;
+
             // Guard: ensure the entity is an illegal sight item before proceeding.
             if (!ctx.Has<CIllegalSight>(entity) || !ctx.Has<CItem>(entity))
             {
                 LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} skipped - missing illegal sight or item component.");
-                return;
+                shouldTransform = false;
             }
 
-            CIllegalSight illegal = ctx.Get<CIllegalSight>(entity);
+            CIllegalSight illegal = default;
+            CItem itemData = default;
+
+            // Guard: defer expensive component lookups until the entity passes initial validation.
+            if (shouldTransform)
+            {
+                illegal = ctx.Get<CIllegalSight>(entity);
+                itemData = ctx.Get<CItem>(entity);
+            }
+
+            bool recoveredFromBlueprint = false;
 
             // Guard: confirm the illegal sight provides a valid rotten replacement or recover it from the blueprint when stale.
-            if (illegal.TurnIntoOnDayStart <= 0)
+            if (shouldTransform && illegal.TurnIntoOnDayStart <= 0)
             {
                 // Attempt to recover the rotten target from the source item blueprint.
-                CItem itemData = ctx.Get<CItem>(entity);
-                bool recoveredFromBlueprint = false;
-
-                // Resolve the blueprint so we can inspect its attached properties.
                 if (GameData.Main.TryGet(itemData.ID, out Item itemBlueprint, false))
                 {
                     // Inspect the blueprint properties for a CIllegalSight definition with a valid transformation target.
@@ -55,6 +63,7 @@ namespace KitchenMysteryMeat.Systems.Effects
                         // Iterate through the blueprint properties to locate a valid illegal sight definition.
                         foreach (IItemProperty property in itemBlueprint.Properties)
                         {
+                            // Guard: adopt the blueprint-provided rotten target when it includes a valid mapping.
                             if (property is CIllegalSight blueprintIllegal && blueprintIllegal.TurnIntoOnDayStart > 0)
                             {
                                 illegal.TurnIntoOnDayStart = blueprintIllegal.TurnIntoOnDayStart;
@@ -66,9 +75,9 @@ namespace KitchenMysteryMeat.Systems.Effects
                         }
                     }
 
+                    // Guard: note when inspection completed without a usable mapping so fallback logic can take over.
                     if (!recoveredFromBlueprint)
                     {
-                        // Log the absence of a usable illegal sight property when inspection succeeds.
                         LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} item blueprint {itemData.ID} lacked a valid TurnIntoOnDayStart.");
                     }
                 }
@@ -87,117 +96,126 @@ namespace KitchenMysteryMeat.Systems.Effects
                     LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} mapped fresh corpse {itemData.ID} to rotten {mappedRottenID} via known defaults.");
                 }
 
-                // Skip further handling when the item already represents the rotten corpse blueprint.
+                // Guard: skip further handling when the item already represents the rotten corpse blueprint.
                 if (!recoveredFromBlueprint && itemData.ID == RottenCustomerCorpseID)
                 {
                     LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} already uses rotten corpse blueprint {itemData.ID}; decay skipped.");
-                    return;
+                    shouldTransform = false;
                 }
 
-                if (!recoveredFromBlueprint)
+                // Guard: abort when no valid rotten target is discovered after the fallback recovery attempt.
+                if (shouldTransform && !recoveredFromBlueprint)
                 {
-                    // Abort when no valid rotten target is discovered after the fallback recovery attempt.
                     LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} skipped - no TurnIntoOnDayStart configured.");
-                    return;
+                    shouldTransform = false;
                 }
             }
 
-            LogCorpseDebug($"[TransformCorpse] Preparing to rot entity {entity.Index} into item {illegal.TurnIntoOnDayStart}.");
-
-            bool isHeld = ctx.Has<CHeldBy>(entity);
-            CHeldBy heldData = default;
-            Entity holderEntity = Entity.Null;
-
-            // Capture holder data so we can reattach the rotten replacement correctly.
-            if (isHeld)
+            // Continue with the transformation only when prerequisites succeed.
+            if (shouldTransform)
             {
-                heldData = ctx.Get<CHeldBy>(entity);
-                holderEntity = heldData.Holder;
-                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} is held by {holderEntity.Index}.");
-            }
+                LogCorpseDebug($"[TransformCorpse] Preparing to rot entity {entity.Index} into item {illegal.TurnIntoOnDayStart}.");
 
-            bool skipForPreserver = false;
+                bool isHeld = ctx.Has<CHeldBy>(entity);
+                CHeldBy heldData = default;
+                Entity holderEntity = Entity.Null;
 
-            // Detect genuine preservers so we avoid rotting items stored in freezers or similar appliances.
-            if (holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity))
-            {
-                bool hadTemporaryPreserver = ctx.Has<CIllegalSightHolderPreserved>(holderEntity) && ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
-                skipForPreserver = !hadTemporaryPreserver;
+                // Capture holder data so we can reattach the rotten replacement correctly.
+                if (isHeld)
+                {
+                    heldData = ctx.Get<CHeldBy>(entity);
+                    holderEntity = heldData.Holder;
+                    LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} is held by {holderEntity.Index}.");
+                }
 
+                bool skipForPreserver = false;
+
+                // Detect genuine preservers so we avoid rotting items stored in freezers or similar appliances.
+                if (holderEntity != Entity.Null && ctx.Has<CPreservesContentsOvernight>(holderEntity))
+                {
+                    bool hadTemporaryPreserver = ctx.Has<CIllegalSightHolderPreserved>(holderEntity) && ctx.Get<CIllegalSightHolderPreserved>(holderEntity).AddedPreserver;
+                    skipForPreserver = !hadTemporaryPreserver;
+
+                    if (skipForPreserver)
+                    {
+                        LogCorpseDebug($"[TransformCorpse] Holder {holderEntity.Index} genuinely preserves contents - decay skipped.");
+                    }
+                    else
+                    {
+                        LogCorpseDebug($"[TransformCorpse] Holder {holderEntity.Index} only has a temporary preserver - decay allowed.");
+                    }
+                }
+
+                // Guard: respect genuine preservers even after logging the details.
                 if (skipForPreserver)
                 {
-                    LogCorpseDebug($"[TransformCorpse] Holder {holderEntity.Index} genuinely preserves contents - decay skipped.");
+                    shouldTransform = false;
                 }
-                else
+
+                // Proceed with corpse replacement when no preservers blocked the process.
+                if (shouldTransform)
                 {
-                    LogCorpseDebug($"[TransformCorpse] Holder {holderEntity.Index} only has a temporary preserver - decay allowed.");
+                    bool hasSplitComponent = ctx.Has<CSplittableItem>(entity);
+                    int remainingCount = 0;
+                    int totalCount = 0;
+
+                    // Preserve portion counts so the rotten corpse inherits the same servings.
+                    if (hasSplitComponent)
+                    {
+                        CSplittableItem split = ctx.Get<CSplittableItem>(entity);
+                        remainingCount = split.RemainingCount;
+                        totalCount = split.TotalCount;
+                        LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} portions captured ({remainingCount}/{totalCount}).");
+                    }
+
+                    Entity newCorpse = ctx.CreateEntity();
+                    ctx.Set(newCorpse, new CCreateItem
+                    {
+                        ID = illegal.TurnIntoOnDayStart
+                    });
+                    LogCorpseDebug($"[TransformCorpse] Spawned rotten corpse entity {newCorpse.Index}.");
+
+                    // Retain portion data if applicable.
+                    if (hasSplitComponent)
+                    {
+                        ctx.Set(newCorpse, new CPersistPortions
+                        {
+                            RemainingCount = remainingCount,
+                            TotalCount = totalCount
+                        });
+                        LogCorpseDebug($"[TransformCorpse] Applied CPersistPortions to rotten corpse {newCorpse.Index}.");
+                    }
+
+                    bool hasPosition = ctx.Has<CPosition>(entity);
+
+                    // Reattach the new corpse to its previous holder or position.
+                    if (holderEntity != Entity.Null)
+                    {
+                        ctx.Set(newCorpse, heldData);
+
+                        // Update the holder so it now references the rotten corpse entity.
+                        if (ctx.Has<CItemHolder>(holderEntity))
+                        {
+                            CItemHolder holderData = ctx.Get<CItemHolder>(holderEntity);
+                            holderData.HeldItem = newCorpse;
+                            ctx.Set(holderEntity, holderData);
+                            LogCorpseDebug($"[TransformCorpse] Updated holder {holderEntity.Index} to reference rotten corpse {newCorpse.Index}.");
+                        }
+                    }
+                    // Assign the world position when the corpse was resting on the ground.
+                    else if (hasPosition)
+                    {
+                        ctx.Set(newCorpse, ctx.Get<CPosition>(entity));
+                        LogCorpseDebug($"[TransformCorpse] Assigned world position to rotten corpse {newCorpse.Index}.");
+                    }
+
+                    // Remove the original corpse item so only the rotten replacement remains.
+                    ctx.Destroy(entity);
+                    LogCorpseDebug($"[TransformCorpse] Destroyed original entity {entity.Index} after spawning rotten corpse {newCorpse.Index}.");
                 }
             }
-
-            // Guard: respect genuine preservers even after logging the details.
-            if (skipForPreserver)
-            {
-                return;
-            }
-
-            bool hasSplitComponent = ctx.Has<CSplittableItem>(entity);
-            int remainingCount = 0;
-            int totalCount = 0;
-
-            // Preserve portion counts so the rotten corpse inherits the same servings.
-            if (hasSplitComponent)
-            {
-                CSplittableItem split = ctx.Get<CSplittableItem>(entity);
-                remainingCount = split.RemainingCount;
-                totalCount = split.TotalCount;
-                LogCorpseDebug($"[TransformCorpse] Entity {entity.Index} portions captured ({remainingCount}/{totalCount}).");
-            }
-
-            Entity newCorpse = ctx.CreateEntity();
-            ctx.Set(newCorpse, new CCreateItem
-            {
-                ID = illegal.TurnIntoOnDayStart
-            });
-            LogCorpseDebug($"[TransformCorpse] Spawned rotten corpse entity {newCorpse.Index}.");
-
-            // Retain portion data if applicable.
-            if (hasSplitComponent)
-            {
-                ctx.Set(newCorpse, new CPersistPortions
-                {
-                    RemainingCount = remainingCount,
-                    TotalCount = totalCount
-                });
-                LogCorpseDebug($"[TransformCorpse] Applied CPersistPortions to rotten corpse {newCorpse.Index}.");
-            }
-
-            bool hasPosition = ctx.Has<CPosition>(entity);
-
-            // Reattach the new corpse to its previous holder or position.
-            if (holderEntity != Entity.Null)
-            {
-                ctx.Set(newCorpse, heldData);
-
-                // Update the holder so it now references the rotten corpse entity.
-                if (ctx.Has<CItemHolder>(holderEntity))
-                {
-                    CItemHolder holderData = ctx.Get<CItemHolder>(holderEntity);
-                    holderData.HeldItem = newCorpse;
-                    ctx.Set(holderEntity, holderData);
-                    LogCorpseDebug($"[TransformCorpse] Updated holder {holderEntity.Index} to reference rotten corpse {newCorpse.Index}.");
-                }
-            }
-            // Assign the world position when the corpse was resting on the ground.
-            else if (hasPosition)
-            {
-                ctx.Set(newCorpse, ctx.Get<CPosition>(entity));
-                LogCorpseDebug($"[TransformCorpse] Assigned world position to rotten corpse {newCorpse.Index}.");
-            }
-
-            // Remove the original corpse item so only the rotten replacement remains.
-            ctx.Destroy(entity);
-            LogCorpseDebug($"[TransformCorpse] Destroyed original entity {entity.Index} after spawning rotten corpse {newCorpse.Index}.");
         }
+
 
         /// <summary>
         /// Attempts to resolve a rotten corpse ID for known fresh corpse blueprints.

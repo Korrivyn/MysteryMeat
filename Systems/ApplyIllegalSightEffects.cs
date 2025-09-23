@@ -41,6 +41,7 @@ namespace KitchenMysteryMeat.Systems
                     // Create an EntityContext backed by the project's EntityManager
                     EntityContext ctx = new EntityContext(EntityManager);
 
+                    // Iterate backwards so entity destruction during processing remains safe.
                     for (int i = allEntities.Length - 1; i >= 0; --i)
                     {
                         Entity entity = allEntities[i];
