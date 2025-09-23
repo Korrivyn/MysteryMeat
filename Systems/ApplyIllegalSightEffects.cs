@@ -26,8 +26,8 @@ namespace KitchenMysteryMeat.Systems
 
             using (NativeArray<Entity> allEntities = query.ToEntityArray(Allocator.Temp))
             {
-                // Log the total number of illegal entities discovered for debugging purposes.
-                Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Processing {allEntities.Length} illegal entities at day start.");
+                // Log the total number of illegal entities discovered for debugging purposes using the debug helper.
+                DebugLogSystem.LogInfo($"[ApplyIllegalSightEffects] Processing {allEntities.Length} illegal entities at day start.");
 
                 // Guard: short-circuit when no illegal entities require processing.
                 if (allEntities.Length > 0)
@@ -40,23 +40,23 @@ namespace KitchenMysteryMeat.Systems
                         Entity entity = allEntities[i];
 
                         // Emit a debug line for each entity as it is evaluated.
-                        Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Evaluating entity {entity.Index}.");
+                        DebugLogSystem.LogVerbose($"[ApplyIllegalSightEffects] Evaluating entity {entity.Index}.");
 
                         // Handle illegal items by spawning rotten replacements.
                         if (ctx.Has<CItem>(entity))
                         {
-                            Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Transforming illegal item entity {entity.Index}.");
+                            DebugLogSystem.LogVerbose($"[ApplyIllegalSightEffects] Transforming illegal item entity {entity.Index}.");
                             CorpseEffects.TransformCorpse(ctx, entity);
                         }
                         // Handle illegal appliances that swap to their configured replacements.
                         else if (ctx.Has<CAppliance>(entity))
                         {
-                            Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Replacing illegal appliance entity {entity.Index}.");
+                            DebugLogSystem.LogVerbose($"[ApplyIllegalSightEffects] Replacing illegal appliance entity {entity.Index}.");
                             CorpseEffects.ReplaceWithAppliance(ctx, entity);
                         }
                         else
                         {
-                            Mod.Logger?.LogInfo($"[ApplyIllegalSightEffects] Entity {entity.Index} lacked item or appliance components.");
+                            DebugLogSystem.LogVerbose($"[ApplyIllegalSightEffects] Entity {entity.Index} lacked item or appliance components.");
                         }
                     }
                 }

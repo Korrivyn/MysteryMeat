@@ -11,7 +11,23 @@ namespace KitchenMysteryMeat.Systems
     public static class DebugLogSystem
     {
         private static KitchenLogger _logger;
-        private static Func<DebugLogLevel> _levelProvider = () => DebugLogLevel.Off;
+        private static Func<DebugLogLevel> _levelProvider;
+
+        /// <summary>
+        /// Establishes the logger reference used by the debug log system.
+        /// Contributors should invoke this entry point from <see cref="Mod"/> during startup so
+        /// that all future logging is routed through the helper and benefits from centralised
+        /// formatting and level checks.
+        /// </summary>
+        /// <param name="logger">The logger instance supplied by the mod host.</param>
+        public static void Initialize(KitchenLogger logger)
+        {
+            // Stores the provided logger once to avoid reassigning a working reference mid-session.
+            if (_logger == null && logger != null)
+            {
+                _logger = logger;
+            }
+        }
 
         /// <summary>
         /// Configures the log system with the current logger instance and active debug level provider.
@@ -21,8 +37,13 @@ namespace KitchenMysteryMeat.Systems
         public static void Configure(KitchenLogger logger, Func<DebugLogLevel> levelProvider)
         {
             // Stores the logger and level provider so log calls can use the most recent configuration.
-            _logger = logger;
-            _levelProvider = levelProvider ?? (() => DebugLogLevel.Off);
+            Initialize(logger);
+
+            // Captures the supplied level provider so callers can override the default accessor.
+            if (levelProvider != null)
+            {
+                _levelProvider = levelProvider;
+            }
         }
 
         /// <summary>
@@ -135,8 +156,15 @@ namespace KitchenMysteryMeat.Systems
         /// <returns>The active debug logging level.</returns>
         private static DebugLogLevel GetConfiguredLevel()
         {
-            // Retrieves the debug level from the provider when available.
-            DebugLogLevel configuredLevel = _levelProvider != null ? _levelProvider.Invoke() : DebugLogLevel.Off;
+            // Begins with the mod accessor so early startup scenarios remain safe when preferences are unavailable.
+            DebugLogLevel configuredLevel = Mod.ActiveDebugLogLevel;
+
+            // Allows custom providers to override the accessor when explicitly configured.
+            if (_levelProvider != null)
+            {
+                configuredLevel = _levelProvider.Invoke();
+            }
+
             return configuredLevel;
         }
 

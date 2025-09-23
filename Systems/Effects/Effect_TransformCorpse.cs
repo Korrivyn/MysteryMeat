@@ -8,6 +8,7 @@ using KitchenLib.Utils;
 using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Items;
+using KitchenMysteryMeat.Systems;
 using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems.Effects
@@ -208,10 +209,10 @@ namespace KitchenMysteryMeat.Systems.Effects
             return false;
         }
 
-        // Emits debug output through the mod logger when available.
+        // Emits debug output through the shared debug logging helper so verbosity remains configurable.
         private static void LogCorpseDebug(string message)
         {
-            Mod.Logger?.LogInfo(message);
+            DebugLogSystem.LogVerbose(message);
         }
     }
 }

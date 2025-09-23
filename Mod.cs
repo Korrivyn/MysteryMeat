@@ -90,6 +90,9 @@ namespace KitchenMysteryMeat
             Bundle = mod.GetPacks<AssetBundleModPack>().SelectMany(e => e.AssetBundles).FirstOrDefault() ?? throw new MissingAssetBundleException(MOD_GUID);
             Logger = InitLogger();
 
+            // Registers the mod logger with the debug helper immediately so future log calls reuse the shared reference.
+            DebugLogSystem.Initialize(Logger);
+
             // Configures the debug logging helper immediately after the logger is created.
             DebugLogSystem.Configure(Logger, () => ActiveDebugLogLevel);
 
