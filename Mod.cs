@@ -33,6 +33,38 @@ namespace KitchenMysteryMeat
         internal static AssetBundle Bundle;
         internal static KitchenLogger Logger;
 
+        /// <summary>
+        /// Gets the ASCII art banner displayed when the mod is initialised.
+        /// </summary>
+        private static string ModLoadedBanner
+        {
+            get
+            {
+                string[] bannerLines =
+                {
+                    @"      __  __         _                  __  __          _   ",
+                    @"     |  \/  |_  _ __| |_ ___ _ _ _  _  |  \/  |___ __ _| |_ ",
+                    @"     | |\/| | || (_-<  _/ -_) '_| || | | |\/| / -_) _` |  _|",
+                    @"     |_|  |_|\_, /__/\__\___|_|  \_, | |_|  |_\___\__,_|\__|",
+                    @"             |__/                |__/                       ",
+                    @"",
+                    @"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⠀⠀⠀⠀",
+                    @"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⡶⠶⣦⣄⠀⠀⢀⣴⣿⣷⡄⠀⠀",
+                    @"⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⣿⣿⡇⡖⠂⠙⠗⣠⣾⣿⣿⣿⣥⣀⠀",
+                    @"⠀⠀⠀⠀⠀⠀⠀⢀⣀⣠⣤⣶⣿⣿⣿⣿⣿⣇⢣⠀⣠⣾⣿⣿⣿⣿⣿⣿⣿⠇",
+                    @"⠀⠀⠀⠀⠀⠀⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡌⢧⠘⠿⠟⠛⣉⠉⠀⠀⠀⠀",
+                    @"⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣌⠳⣄⠀⠀⣿⡀⠀⠀⠀⠀",
+                    @"⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣌⣉⣁⡿⠀⠀⠀⠀⠀",
+                    @"⠀⢀⣤⣤⣤⣤⡀⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠛⠉⠀⠀⠀⠀⠀⠀",
+                    @"⠀⢻⣿⣿⣿⣿⣷⡀⠹⣿⣿⣿⣿⣿⣿⣿⣿⠟⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+                    @"⠀⠀⠉⢩⣿⣿⣿⠋⠀⠈⠻⢿⣿⣿⣿⠋⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+                    @"⠀⠀⠀⠸⣿⡿⠁⠀⠀⠀⠀⠀⠈⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀",
+                    $"        Mystery Meat v{ModVersion}"
+                };
+                return string.Join(Environment.NewLine, bannerLines);
+            }
+        }
+
         public Mod() : base(MOD_GUID, MOD_NAME, MOD_AUTHOR, ModVersionString, MOD_GAMEVERSION, Assembly.GetExecutingAssembly()) { }
 
         public static SoundEvent StabSoundEvent;
@@ -75,15 +107,24 @@ namespace KitchenMysteryMeat
             }
         }
 
+        /// <summary>
+        /// Handles initial mod setup and displays the load notification banner.
+        /// </summary>
         protected override void OnInitialise()
         {
-            Logger.LogWarning($"{MOD_GUID} v{ModVersion} in use!");
+            Logger.LogWarning(ModLoadedBanner);
         }
 
+        /// <summary>
+        /// Handles per-frame updates for the mod.
+        /// </summary>
         protected override void OnUpdate()
         {
         }
 
+        /// <summary>
+        /// Handles asset loading and preference initialisation after the mod is activated.
+        /// </summary>
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
             Bundle = mod.GetPacks<AssetBundleModPack>().SelectMany(e => e.AssetBundles).FirstOrDefault() ?? throw new MissingAssetBundleException(MOD_GUID);
