@@ -3,189 +3,169 @@ using System.Diagnostics;
 using KitchenLib.Logging;
 using KitchenMysteryMeat.Enums;
 
-namespace KitchenMysteryMeat.Systems
+namespace KitchenMysteryMeat.Systems.Logging
 {
     /// <summary>
-    /// Provides helper methods for emitting debug logs with consistent formatting and verbosity control.
+    /// Provides an opinionated logging facade that honours the configured debug level and enriches
+    /// messages with the Mystery Meat prefix and optional stack traces.
     /// </summary>
     public static class DebugLogSystem
     {
+        private const string LogPrefix = "[Mystery Meat]";
+
         private static KitchenLogger _logger;
         private static Func<DebugLogLevel> _levelProvider;
 
         /// <summary>
-        /// Establishes the logger reference used by the debug log system.
-        /// Contributors should invoke this entry point from <see cref="Mod"/> during startup so
-        /// that all future logging is routed through the helper and benefits from centralised
-        /// formatting and level checks.
+        /// Initialises the logging helper with the mod logger and the active debug level provider.
         /// </summary>
-        /// <param name="logger">The logger instance supplied by the mod host.</param>
-        public static void Initialize(KitchenLogger logger)
+        /// <param name="logger">The logger supplied by the mod framework.</param>
+        /// <param name="levelProvider">A delegate that exposes the current debug log level.</param>
+        public static void Initialise(KitchenLogger logger, Func<DebugLogLevel> levelProvider)
         {
-            // Stores the provided logger once to avoid reassigning a working reference mid-session.
-            if (_logger == null && logger != null)
+            // Store the supplied logger when available so future writes share the reference.
+            if (logger != null)
             {
                 _logger = logger;
             }
-        }
 
-        /// <summary>
-        /// Configures the log system with the current logger instance and active debug level provider.
-        /// </summary>
-        /// <param name="logger">The logger instance used for writing mod output.</param>
-        /// <param name="levelProvider">A provider that returns the active debug logging level.</param>
-        public static void Configure(KitchenLogger logger, Func<DebugLogLevel> levelProvider)
-        {
-            // Stores the logger and level provider so log calls can use the most recent configuration.
-            Initialize(logger);
-
-            // Captures the supplied level provider so callers can override the default accessor.
+            // Capture the level provider or fall back to the mod accessor when no override is supplied.
             if (levelProvider != null)
             {
                 _levelProvider = levelProvider;
             }
+            else
+            {
+                _levelProvider = () => Mod.ActiveDebugLogLevel;
+            }
         }
 
         /// <summary>
-        /// Determines whether a message should be logged based on the configured debug level.
-        /// </summary>
-        /// <param name="level">The minimum debug level required to emit the message.</param>
-        /// <returns>True when the configured level allows logging for the requested message level.</returns>
-        public static bool ShouldLog(DebugLogLevel level)
-        {
-            // Determines whether logging should occur without exposing the configured level to callers.
-            DebugLogLevel configuredLevel;
-            // Evaluates the logging decision using the overload that also returns the active level.
-            bool canLog = ShouldLog(level, out configuredLevel);
-            return canLog;
-        }
-
-        /// <summary>
-        /// Determines whether a message should be logged and outputs the configured level for reuse.
-        /// </summary>
-        /// <param name="level">The minimum debug level required to emit the message.</param>
-        /// <param name="configuredLevel">The active debug level resolved from the provider.</param>
-        /// <returns>True when the configured level allows logging for the requested message level.</returns>
-        public static bool ShouldLog(DebugLogLevel level, out DebugLogLevel configuredLevel)
-        {
-            // Retrieves the current debug level for evaluation.
-            configuredLevel = GetConfiguredLevel();
-
-            // Evaluates logger readiness and level thresholds in a single consolidated expression.
-            bool canLog = _logger != null && configuredLevel != DebugLogLevel.Off && configuredLevel >= level;
-            return canLog;
-        }
-
-        /// <summary>
-        /// Writes an informational message when the debug level permits it.
+        /// Emits an informational log entry when the configured level allows debug output.
         /// </summary>
         /// <param name="message">The message to record.</param>
         public static void LogInfo(string message)
         {
-            // Determines whether informational logging is permitted at the current debug level.
-            bool shouldLog = ShouldLog(DebugLogLevel.On, out DebugLogLevel configuredLevel);
+            // Resolve the logger and active level so the method can determine if logging is permitted.
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Logs the informational message when allowed.
-            if (shouldLog)
+            // Guard: skip logging when the logger is unavailable or informational output is disabled.
+            if (logger != null && activeLevel >= DebugLogLevel.On)
             {
-                // Calculates whether the stack trace should be appended for the current level.
-                bool includeStackTrace = configuredLevel >= DebugLogLevel.On;
-
-                // Emits the formatted informational log entry.
-                _logger.LogInfo(FormatMessage(message, includeStackTrace));
+                // Include stack traces when the level is at least On to aid diagnostics.
+                bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+                logger.LogInfo(FormatMessage(message, includeStackTrace));
             }
         }
 
         /// <summary>
-        /// Writes a warning message when the debug level permits it.
+        /// Emits a warning log entry when debug logging has been enabled by the user.
         /// </summary>
-        /// <param name="message">The warning to record.</param>
+        /// <param name="message">The warning message to record.</param>
         public static void LogWarning(string message)
         {
-            // Determines whether warning logging is permitted at the current debug level.
-            bool shouldLog = ShouldLog(DebugLogLevel.On, out DebugLogLevel configuredLevel);
+            // Resolve the logger and active level so the method can determine if logging is permitted.
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Logs the warning message when allowed.
-            if (shouldLog)
+            // Guard: skip logging when the logger is unavailable or warning output is disabled.
+            if (logger != null && activeLevel >= DebugLogLevel.On)
             {
-                // Calculates whether the stack trace should be appended for the current level.
-                bool includeStackTrace = configuredLevel >= DebugLogLevel.On;
-
-                // Emits the formatted warning log entry.
-                _logger.LogWarning(FormatMessage(message, includeStackTrace));
+                // Include stack traces when the level is at least On to aid diagnostics.
+                bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+                logger.LogWarning(FormatMessage(message, includeStackTrace));
             }
         }
 
         /// <summary>
-        /// Writes an error message while always respecting logger availability.
+        /// Emits an error log entry and respects the stack trace preference for verbose diagnostics.
         /// </summary>
-        /// <param name="message">The error to record.</param>
+        /// <param name="message">The error message to record.</param>
         public static void LogError(string message)
         {
-            // Ensures that error logging only occurs when a logger is configured.
-            if (_logger != null)
-            {
-                // Calculates whether the stack trace should be appended for the current level.
-                bool includeStackTrace = GetConfiguredLevel() >= DebugLogLevel.On;
+            // Resolve the logger so the method can emit error output when available.
+            KitchenLogger logger = ResolveLogger();
 
-                // Emits the formatted error log entry.
-                _logger.LogError(FormatMessage(message, includeStackTrace));
+            // Guard: skip logging when the logger is unavailable.
+            if (logger != null)
+            {
+                // Include stack traces when the configured level permits expanded diagnostics.
+                bool includeStackTrace = GetActiveDebugLogLevel() >= DebugLogLevel.On;
+                logger.LogError(FormatMessage(message, includeStackTrace));
             }
         }
 
         /// <summary>
-        /// Writes a verbose message when the debug level is configured for verbose output.
+        /// Emits verbose diagnostic output when the debug level has been set to Verbose.
         /// </summary>
-        /// <param name="message">The verbose diagnostic to record.</param>
+        /// <param name="message">The verbose message to record.</param>
         public static void LogVerbose(string message)
         {
-            // Determines whether verbose logging is permitted at the current debug level.
-            bool shouldLog = ShouldLog(DebugLogLevel.Verbose, out DebugLogLevel configuredLevel);
+            // Resolve the logger and active level so the method can determine if logging is permitted.
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Logs the verbose message when allowed.
-            if (shouldLog)
+            // Guard: skip logging when the logger is unavailable or verbose output is disabled.
+            if (logger != null && activeLevel >= DebugLogLevel.Verbose)
             {
-                // Verbose logging always includes stack traces for detailed diagnostics.
-                _logger.LogInfo(FormatMessage(message, true));
+                // Verbose logging always includes the stack trace to maximise diagnostic value.
+                logger.LogInfo(FormatMessage(message, true));
             }
         }
 
         /// <summary>
-        /// Retrieves the configured logging level from the registered provider.
+        /// Resolves the logger reference, defaulting to the mod logger when initialisation has not occurred.
         /// </summary>
-        /// <returns>The active debug logging level.</returns>
-        private static DebugLogLevel GetConfiguredLevel()
+        /// <returns>The logger instance ready for emitting output, or null if unavailable.</returns>
+        private static KitchenLogger ResolveLogger()
         {
-            // Begins with the mod accessor so early startup scenarios remain safe when preferences are unavailable.
-            DebugLogLevel configuredLevel = Mod.ActiveDebugLogLevel;
-
-            // Allows custom providers to override the accessor when explicitly configured.
-            if (_levelProvider != null)
+            // Synchronise the cached logger with the mod when the helper has not yet been initialised.
+            if (_logger == null && Mod.Logger != null)
             {
-                configuredLevel = _levelProvider.Invoke();
+                _logger = Mod.Logger;
             }
 
-            return configuredLevel;
+            // Provide the cached logger so callers can emit logs consistently.
+            KitchenLogger logger = _logger;
+            return logger;
         }
 
         /// <summary>
-        /// Formats a message with the standard prefix and optional stack trace details.
+        /// Retrieves the active debug logging level from the configured provider.
+        /// </summary>
+        /// <returns>The debug level currently selected by the user.</returns>
+        private static DebugLogLevel GetActiveDebugLogLevel()
+        {
+            // Default the level provider to the mod accessor when no override has been configured.
+            if (_levelProvider == null)
+            {
+                _levelProvider = () => Mod.ActiveDebugLogLevel;
+            }
+
+            // Resolve the level using the configured provider.
+            DebugLogLevel activeLevel = _levelProvider.Invoke();
+            return activeLevel;
+        }
+
+        /// <summary>
+        /// Formats messages with the Mystery Meat prefix and optional stack trace details.
         /// </summary>
         /// <param name="message">The message to format.</param>
         /// <param name="includeStackTrace">A value indicating whether a stack trace should be appended.</param>
         /// <returns>The formatted message ready for logging.</returns>
         private static string FormatMessage(string message, bool includeStackTrace)
         {
-            // Prepends the mod identifier to the message for consistent log parsing.
-            string formattedMessage = $"[Mystery Meat] {message}";
+            // Prepend the log prefix so entries remain searchable within the shared log output.
+            string formattedMessage = $"{LogPrefix} {message}";
 
-            // Appends stack trace details when requested.
+            // Append the stack trace when verbose diagnostics are requested.
             if (includeStackTrace)
             {
-                // Generates a stack trace skipping the logging helper frames for clarity.
+                // Generate a stack trace that skips the logging helper frames for clarity.
                 string stackTrace = new StackTrace(2, true).ToString();
 
-                // Adds the stack trace to the message when content is available.
+                // Append the stack trace only when the generated output contains meaningful content.
                 if (!string.IsNullOrWhiteSpace(stackTrace))
                 {
                     formattedMessage = $"{formattedMessage}{Environment.NewLine}{stackTrace}";
