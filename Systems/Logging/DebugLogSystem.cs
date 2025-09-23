@@ -62,7 +62,8 @@ namespace KitchenMysteryMeat.Systems.Logging
         /// <param name="message">The message to record.</param>
         public static void LogInfo(string message)
         {
-            ResolveLoggingContext(out KitchenLogger logger, out DebugLogLevel activeLevel);
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Guard: only emit informational logs when a logger exists and the level is set to On or higher.
             if (logger != null && activeLevel >= DebugLogLevel.On)
@@ -78,7 +79,8 @@ namespace KitchenMysteryMeat.Systems.Logging
         /// <param name="message">The warning message to record.</param>
         public static void LogWarning(string message)
         {
-            ResolveLoggingContext(out KitchenLogger logger, out DebugLogLevel activeLevel);
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Guard: only emit warning logs when a logger exists and the level is set to On or higher.
             if (logger != null && activeLevel >= DebugLogLevel.On)
@@ -94,7 +96,8 @@ namespace KitchenMysteryMeat.Systems.Logging
         /// <param name="message">The error message to record.</param>
         public static void LogError(string message)
         {
-            ResolveLoggingContext(out KitchenLogger logger, out DebugLogLevel activeLevel);
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Guard: only emit errors when a logger reference is available; errors always log even when verbosity is Off.
             if (logger != null)
@@ -110,7 +113,8 @@ namespace KitchenMysteryMeat.Systems.Logging
         /// <param name="message">The verbose message to record.</param>
         public static void LogVerbose(string message)
         {
-            ResolveLoggingContext(out KitchenLogger logger, out DebugLogLevel activeLevel);
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Guard: only emit verbose logs when the logger exists and the level is explicitly set to Verbose.
             if (logger != null && activeLevel >= DebugLogLevel.Verbose)
@@ -121,16 +125,18 @@ namespace KitchenMysteryMeat.Systems.Logging
         }
 
         /// <summary>
-        /// Emits verbose diagnostic output using a deferred message builder when players opt into the Verbose level.
+        /// Emits verbose diagnostic output using a deferred message builder when players opt into the Verbose level while still relying on KitchenLib for the shared prefix.
         /// </summary>
         /// <param name="messageBuilder">A delegate that builds the verbose message when logging is permitted.</param>
         public static void LogVerbose(Func<string> messageBuilder)
         {
-            ResolveLoggingContext(out KitchenLogger logger, out DebugLogLevel activeLevel);
+            KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Guard: bail out when verbose logging is disabled or the logger reference is missing so expensive message construction can be skipped.
             if (logger != null && activeLevel >= DebugLogLevel.Verbose)
             {
+                // Build the verbose message when a builder has been supplied to avoid null dereferences.
                 string message = messageBuilder != null ? messageBuilder.Invoke() : string.Empty;
                 string formattedMessage = FormatMessage(message, true);
                 logger.LogInfo(formattedMessage);
@@ -138,26 +144,38 @@ namespace KitchenMysteryMeat.Systems.Logging
         }
 
         /// <summary>
-        /// Resolves the cached logger and active level in a single place so callers can make consistent decisions.
+        /// Resolves the cached logger reference so log calls remain consistent with the mod bootstrap lifecycle.
         /// </summary>
-        /// <param name="logger">Outputs the logger instance ready for emitting output, or null if unavailable.</param>
-        /// <param name="activeLevel">Outputs the debug level currently selected by the player.</param>
-        private static void ResolveLoggingContext(out KitchenLogger logger, out DebugLogLevel activeLevel)
+        /// <returns>The logger instance ready for emitting output, or null if bootstrap has not supplied one yet.</returns>
+        private static KitchenLogger ResolveLogger()
         {
             KitchenLogger resolvedLogger = _logger;
-            Func<DebugLogLevel> resolvedLevelProvider = _levelProvider ?? DefaultLevelProvider;
 
-            // Adopt the mod logger when the helper has not yet cached a reference but the mod has completed initialisation.
+            // Guard: adopt the mod logger once it becomes available so future calls can reuse it safely.
             if (resolvedLogger == null && Mod.Logger != null)
             {
                 resolvedLogger = Mod.Logger;
             }
 
-            logger = resolvedLogger;
-            activeLevel = resolvedLevelProvider.Invoke();
-
             _logger = resolvedLogger;
-            _levelProvider = resolvedLevelProvider;
+            return resolvedLogger;
+        }
+
+        /// <summary>
+        /// Retrieves the active debug log level using the configured provider so verbosity decisions stay centralised.
+        /// </summary>
+        /// <returns>The debug level currently selected by the player.</returns>
+        private static DebugLogLevel GetActiveDebugLogLevel()
+        {
+            Func<DebugLogLevel> resolvedLevelProvider = _levelProvider ?? DefaultLevelProvider;
+
+            // Guard: cache the resolved provider so subsequent calls reuse the same delegate until reinitialised.
+            if (_levelProvider == null)
+            {
+                _levelProvider = resolvedLevelProvider;
+            }
+
+            return resolvedLevelProvider.Invoke();
         }
 
         /// <summary>
