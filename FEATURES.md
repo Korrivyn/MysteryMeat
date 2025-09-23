@@ -1,3 +1,5 @@
+[← Back to README](README.md)
+
 # Feature Catalog
 
 ## Gameplay Systems
@@ -58,3 +60,5 @@
 - Preference toggles that gate the Cautious Crowd, Messy Murder, and Persistent Corpses status cards.
 - Debug log level preference that gates informational and verbose logging routed through the custom debug helper.
 - Fallback sprite asset injection so grind icons display correctly within text meshes.
+
+[Return to README](README.md)

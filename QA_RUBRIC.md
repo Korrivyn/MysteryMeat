@@ -1,3 +1,5 @@
+[← Back to README](README.md)
+
 # Mystery Meat QA Rubric
 
 ## 1. Mod Configuration and Preference Checks
@@ -292,3 +294,4 @@
   - Expected Results:
     - The grind icon renders correctly without missing-glyph markers.
 
+[Return to README](README.md)
