@@ -6,103 +6,92 @@ using KitchenMysteryMeat.Enums;
 namespace KitchenMysteryMeat.Systems.Logging
 {
     /// <summary>
-    /// Provides the central logging facade that respects the configured debug level while relying on KitchenLib's logger to stamp the shared "[Mystery Meat]" prefix once.
+    /// Provides a static logging façade so gameplay systems can emit output that respects the player's debug verbosity.
     /// </summary>
     public static class DebugLogSystem
     {
         /// <summary>
-        /// Defines how many helper frames to skip when building stack traces for emitted logs.
+        /// Defines how many helper stack frames should be skipped when building stack traces for log entries.
         /// </summary>
         private const int HelperStackFrameSkip = 2;
 
         /// <summary>
-        /// Holds a reference to the Kitchen logger supplied by the mod framework.
+        /// Caches the Kitchen logger shared by the mod once it becomes available.
         /// </summary>
         private static KitchenLogger _logger;
 
         /// <summary>
-        /// Provides access to the current debug log level preference.
+        /// Caches the accessor that resolves the current debug log level preference.
         /// </summary>
         private static Func<DebugLogLevel> _levelProvider;
 
         /// <summary>
-        /// Supplies the fallback provider that reads the mod's active debug log level when no override has been configured.
+        /// Wires the façade to the Kitchen logger and debug level accessor so all systems log consistently.
         /// </summary>
-        private static readonly Func<DebugLogLevel> DefaultLevelProvider = () => Mod.ActiveDebugLogLevel;
-
-        /// <summary>
-        /// Initialises the logging helper with the mod logger and the active debug level provider.
-        /// </summary>
-        /// <param name="logger">The logger supplied by the mod framework.</param>
-        /// <param name="levelProvider">A delegate that exposes the current debug log level.</param>
+        /// <param name="logger">The logger provided during mod bootstrap.</param>
+        /// <param name="levelProvider">The accessor that resolves the player's chosen debug level.</param>
         public static void Initialise(KitchenLogger logger, Func<DebugLogLevel> levelProvider)
         {
-            KitchenLogger resolvedLogger = _logger ?? Mod.Logger;
-            Func<DebugLogLevel> resolvedLevelProvider = _levelProvider ?? DefaultLevelProvider;
-
-            // Adopt the supplied logger when the caller provides an updated reference during bootstrap.
+            // Persist the supplied logger so later systems share the same instance.
             if (logger != null)
             {
-                resolvedLogger = logger;
+                _logger = logger;
             }
 
-            // Adopt the caller's level provider so the helper can poll the live preference when available.
+            // Persist the supplied level accessor so verbosity checks stay centralised.
             if (levelProvider != null)
             {
-                resolvedLevelProvider = levelProvider;
+                _levelProvider = levelProvider;
             }
-
-            _logger = resolvedLogger;
-            _levelProvider = resolvedLevelProvider;
         }
 
         /// <summary>
-        /// Emits an informational log entry when players have enabled debug output. KitchenLib already prefixes entries with "[Mystery Meat]" so the helper intentionally avoids adding it again.
+        /// Emits informational updates for major gameplay transitions when debug logging is enabled.
         /// </summary>
-        /// <param name="message">The message to record.</param>
+        /// <param name="message">The informational message to emit.</param>
         public static void LogInfo(string message)
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
-            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+            bool isMajorTransition = activeLevel >= DebugLogLevel.On;
 
-            // Guard: only emit informational logs when a logger exists and the level is set to On or higher for major transitions.
-            if (logger != null && includeStackTrace)
+            // Guard: only emit informational updates when a logger exists and the player has enabled debug output.
+            if (logger != null && isMajorTransition)
             {
-                string formattedMessage = FormatMessage(message, includeStackTrace);
+                string formattedMessage = FormatMessage(message, isMajorTransition);
                 logger.LogInfo(formattedMessage);
             }
         }
 
         /// <summary>
-        /// Emits a warning log entry when debug logging has been enabled. KitchenLib already prefixes entries with "[Mystery Meat]" so the helper intentionally avoids adding it again.
+        /// Emits warning messages whenever the player has opted into debug logging for issues that may impact gameplay.
         /// </summary>
-        /// <param name="message">The warning message to record.</param>
+        /// <param name="message">The warning message to emit.</param>
         public static void LogWarning(string message)
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
-            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+            bool isWarningEnabled = activeLevel >= DebugLogLevel.On;
 
-            // Guard: only emit warning logs when a logger exists and players have enabled diagnostic output.
-            if (logger != null && includeStackTrace)
+            // Guard: only emit warnings when the logger has been resolved and warnings are enabled.
+            if (logger != null && isWarningEnabled)
             {
-                string formattedMessage = FormatMessage(message, includeStackTrace);
+                string formattedMessage = FormatMessage(message, isWarningEnabled);
                 logger.LogWarning(formattedMessage);
             }
         }
 
         /// <summary>
-        /// Emits an error log entry for critical failures regardless of player verbosity, avoiding extra prefixes because KitchenLib already includes "[Mystery Meat]".
+        /// Emits critical failures regardless of the configured verbosity so players can always see fatal issues.
         /// </summary>
-        /// <param name="message">The error message to record.</param>
+        /// <param name="message">The error message to emit.</param>
         public static void LogError(string message)
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
             bool includeStackTrace = activeLevel >= DebugLogLevel.On;
 
-            // Guard: only emit errors when a logger reference is available; errors always log even when verbosity is Off.
+            // Guard: only emit when the logger reference is available; errors always log even when verbosity is Off.
             if (logger != null)
             {
                 string formattedMessage = FormatMessage(message, includeStackTrace);
@@ -111,63 +100,32 @@ namespace KitchenMysteryMeat.Systems.Logging
         }
 
         /// <summary>
-        /// Emits verbose diagnostic output when players request full verbosity, relying on KitchenLib for the shared prefix rather than duplicating it.
+        /// Emits verbose diagnostics for deep troubleshooting when the player explicitly requests full verbosity.
         /// </summary>
-        /// <param name="message">The verbose message to record.</param>
+        /// <param name="message">The verbose message to emit.</param>
         public static void LogVerbose(string message)
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
             bool isVerboseEnabled = activeLevel >= DebugLogLevel.Verbose;
 
-            // Guard: only emit verbose logs when the logger exists and the level is explicitly set to Verbose.
+            // Guard: only emit verbose logs when the logger exists and the level is set to Verbose.
             if (logger != null && isVerboseEnabled)
             {
-                string formattedMessage = FormatMessage(message, isVerboseEnabled);
+                string formattedMessage = FormatMessage(message, true);
                 logger.LogInfo(formattedMessage);
             }
         }
 
         /// <summary>
-        /// Emits verbose diagnostic output using a deferred message builder when players opt into the Verbose level while still relying on KitchenLib for the shared prefix.
+        /// Resolves the cached Kitchen logger and stores the shared instance once it becomes available.
         /// </summary>
-        /// <param name="messageBuilder">A delegate that builds the verbose message when logging is permitted.</param>
-        public static void LogVerbose(Func<string> messageBuilder)
-        {
-            KitchenLogger logger = ResolveLogger();
-            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
-            bool isVerboseEnabled = activeLevel >= DebugLogLevel.Verbose;
-
-            // Guard: bail out when verbose logging is disabled or the logger reference is missing so expensive message construction can be skipped.
-            if (logger != null && isVerboseEnabled)
-            {
-                string message = string.Empty;
-                bool hasMessageBuilder = messageBuilder != null;
-
-                // Guard: only invoke the builder when the caller supplied one to avoid null reference exceptions.
-                if (hasMessageBuilder)
-                {
-                    message = messageBuilder.Invoke() ?? string.Empty;
-                }
-
-                // Guard: skip logging when no message content is produced after invoking the builder.
-                if (hasMessageBuilder && !string.IsNullOrWhiteSpace(message))
-                {
-                    string formattedMessage = FormatMessage(message, isVerboseEnabled);
-                    logger.LogInfo(formattedMessage);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Resolves the cached logger reference so log calls remain consistent with the mod bootstrap lifecycle.
-        /// </summary>
-        /// <returns>The logger instance ready for emitting output, or null if bootstrap has not supplied one yet.</returns>
+        /// <returns>The resolved logger instance.</returns>
         private static KitchenLogger ResolveLogger()
         {
             KitchenLogger resolvedLogger = _logger;
 
-            // Guard: adopt the mod logger once it becomes available so future calls can reuse it safely.
+            // Guard: fall back to the mod logger when the façade has not been initialised yet.
             if (resolvedLogger == null && Mod.Logger != null)
             {
                 resolvedLogger = Mod.Logger;
@@ -178,41 +136,44 @@ namespace KitchenMysteryMeat.Systems.Logging
         }
 
         /// <summary>
-        /// Retrieves the active debug log level using the configured provider so verbosity decisions stay centralised.
+        /// Resolves the active debug log level so verbosity decisions stay consistent.
         /// </summary>
-        /// <returns>The debug level currently selected by the player.</returns>
+        /// <returns>The active debug log level.</returns>
         private static DebugLogLevel GetActiveDebugLogLevel()
         {
-            Func<DebugLogLevel> resolvedLevelProvider = _levelProvider ?? DefaultLevelProvider;
+            Func<DebugLogLevel> resolvedLevelProvider = _levelProvider;
 
-            // Guard: cache the resolved provider so subsequent calls reuse the same delegate until reinitialised.
-            if (_levelProvider == null)
+            // Guard: adopt the mod's accessor when initialise has not been called yet.
+            if (resolvedLevelProvider == null)
             {
+                resolvedLevelProvider = () => Mod.ActiveDebugLogLevel;
                 _levelProvider = resolvedLevelProvider;
             }
 
-            return resolvedLevelProvider.Invoke();
+            DebugLogLevel activeLevel = resolvedLevelProvider.Invoke();
+            return activeLevel;
         }
 
         /// <summary>
-        /// Formats messages and appends optional stack trace details while trimming helper frames.
+        /// Formats messages and appends stack traces when verbosity requires deeper diagnostics.
         /// </summary>
         /// <param name="message">The message to format.</param>
-        /// <param name="includeStackTrace">A value indicating whether a stack trace should be appended.</param>
+        /// <param name="includeStackTrace">Indicates whether a stack trace should be appended.</param>
         /// <returns>The formatted message ready for logging.</returns>
         private static string FormatMessage(string message, bool includeStackTrace)
         {
             string formattedMessage = message ?? string.Empty;
 
-            // Append the stack trace when verbose diagnostics are requested and trim helper frames for clarity.
+            // Guard: only append stack traces when the verbosity level requires additional diagnostics.
             if (includeStackTrace)
             {
-                string stackTrace = new StackTrace(HelperStackFrameSkip, true).ToString().Trim();
+                StackTrace stackTrace = new StackTrace(HelperStackFrameSkip, true);
+                string trimmedStackTrace = stackTrace.ToString().Trim();
 
-                // Guard: only append stack trace output when the captured string has meaningful content.
-                if (!string.IsNullOrWhiteSpace(stackTrace))
+                // Guard: append the stack trace only when it has meaningful content after trimming.
+                if (!string.IsNullOrWhiteSpace(trimmedStackTrace))
                 {
-                    formattedMessage = $"{formattedMessage}{Environment.NewLine}{stackTrace}";
+                    formattedMessage = $"{formattedMessage}{Environment.NewLine}{trimmedStackTrace}";
                 }
             }
 
