@@ -1,8 +1,3 @@
-// Systems/ApplyIllegalSightEffects.cs
-// Invoker system: replaces the legacy StartOfDay/Overnight systems by invoking the new effect-style logic
-// without using GameData or other legacy global lookups. This uses EntityContext (modern) which is used
-// elsewhere in the project (see KillCustomers.cs).
-
 using Kitchen;
 using KitchenMods;
 using KitchenMysteryMeat;
@@ -14,9 +9,14 @@ using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems
 {
+    /// <summary>
+    /// Applies illegal sight transformations at the start of each day so suspicious items and appliances transition into their corrupted forms.
+    /// </summary>
     public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
     {
-        // Invoked at the start of each day to handle illegal item and appliance transitions.
+        /// <summary>
+        /// Executes the daily illegal sight sweep to mutate or replace contraband entities.
+        /// </summary>
         protected override void OnUpdate()
         {
             // Build query of illegal entities

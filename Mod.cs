@@ -80,7 +80,8 @@ namespace KitchenMysteryMeat
         public const string DEBUG_LOG_LEVEL_ID = "debugLogLevel";
 
         /// <summary>
-        /// Gets the active debug logging level for the mod.
+        /// Gets the active debug logging level selected by the player so they can control log volume.
+        /// The stored value mirrors the <see cref="DebugLogLevel"/> enum where 0 = Off, 1 = On, and 2 = Verbose.
         /// </summary>
         public static DebugLogLevel ActiveDebugLogLevel
         {
@@ -97,6 +98,11 @@ namespace KitchenMysteryMeat
                     if (Enum.IsDefined(typeof(DebugLogLevel), storedLevel))
                     {
                         activeLevel = (DebugLogLevel)storedLevel;
+                    }
+                    else
+                    {
+                        // Maintains the default Off level when the stored value falls outside the reserved enum range.
+                        activeLevel = DebugLogLevel.Off;
                     }
                 }
 
@@ -148,6 +154,7 @@ namespace KitchenMysteryMeat
             });
             int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
             string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
+            // These values intentionally match the DebugLogLevel enum so 0-2 remain reserved for logging control.
             int[] debugLogLevelValues = new[]
             {
                 (int)DebugLogLevel.Off,
