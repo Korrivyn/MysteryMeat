@@ -53,6 +53,7 @@ namespace KitchenMysteryMeat
                     @"        | | | | -_| .'|  _|      ⠀⢻⣿⣿⣿⣿⣷⡀⠹⣿⣿⣿⣿⣿⣿⣿⣿⠟⠋⠁",
                     $"        |_|_|_|___|__,|_|   ⠀     ⠀⠉⢩⣿⣿⣿⠋⠀⠈⠻⢿⣿⣿⣿⠋⠁⠀⠀⠀⠀v{ModVersion}",
                     @"           by QuackAndCheese       ⠀⠸⣿⡿⠁⠀⠀⠀⠀⠀⠈⠉",
+                    @"",
                     @""
                 };
                 return string.Join(Environment.NewLine, bannerLines);
