@@ -18,6 +18,8 @@ using PreferenceSystem.Generators;
 using PreferenceSystem;
 using KitchenMysteryMeat.Customs.Cards;
 using KitchenMysteryMeat.Enums;
+using KitchenMysteryMeat.Systems;
+using KitchenMysteryMeat.Systems.Logging;
 
 namespace KitchenMysteryMeat
 {
@@ -107,7 +109,8 @@ namespace KitchenMysteryMeat
         /// </summary>
         protected override void OnInitialise()
         {
-            Logger.LogInfo(ModLoadedBanner);
+            // Emit a startup info post through the debug helper so it respects the configured verbosity.
+            DebugLogSystem.LogInfo(ModLoadedBanner);
         }
 
         /// <summary>
@@ -124,6 +127,9 @@ namespace KitchenMysteryMeat
         {
             Bundle = mod.GetPacks<AssetBundleModPack>().SelectMany(e => e.AssetBundles).FirstOrDefault() ?? throw new MissingAssetBundleException(MOD_GUID);
             Logger = InitLogger();
+
+            // Initialise the debug helper immediately so all subsequent log calls share the same configuration.
+            DebugLogSystem.Initialise(Logger, () => ActiveDebugLogLevel);
 
             Bundle.LoadAllAssets<Texture2D>();
             Bundle.LoadAllAssets<Sprite>();
