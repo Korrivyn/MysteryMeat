@@ -68,7 +68,7 @@ namespace KitchenMysteryMeat
         /// <summary>
         /// Gets the ASCII art banner displayed when the mod is initialised.
         /// </summary>
-        private static string ModLoadedBanner
+        private static string MysteryMeatBanner
         {
             get
             {
@@ -204,8 +204,15 @@ namespace KitchenMysteryMeat
             // Ensure core services exist so activation can proceed with a configured logger and preferences.
             bool coreReady = EnsureCoreInitialisation();
 
-            // Resolve the asset bundle once the activation context has been provided explicitly.
-            bool assetsReady = EnsureAssetBundle(mod);
+            // Guard: abort runtime registrations when the initialisation failed to acquire assets or preferences.
+            if (!isReady)
+            {
+                DebugLogSystem.LogError("Mystery Meat initialisation failed; runtime hooks and event subscriptions have been skipped to avoid null reference issues.");
+            }
+            else
+            {
+                // Emit a startup info post through the debug helper so it respects the configured verbosity.
+                DebugLogSystem.LogInfo(MysteryMeatBanner);
 
             // Attempt to register runtime hooks now that activation has supplied every dependency.
             TryRegisterRuntimeHooks();
