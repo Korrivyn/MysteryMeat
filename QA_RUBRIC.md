@@ -4,16 +4,22 @@
 # Mystery Meat QA Rubric
 
 ## Navigation
-- [1. Mod Configuration and Preference Checks](#mod-configuration-and-preference-checks)
-- [2. Murder Loop and Gore Generation](#murder-loop-and-gore-generation)
-- [3. Suspicion, Alerts, and Loss Conditions](#suspicion-alerts-and-loss-conditions)
-- [4. Illegal Sight Persistence and Overnight Behaviour](#illegal-sight-persistence-and-overnight-behaviour)
-- [5. Special Sauce Lifecycle](#special-sauce-lifecycle)
-- [6. Poisoning Flow](#poisoning-flow)
-- [7. Meat Processing and Dish Coverage](#meat-processing-and-dish-coverage)
+- [Mod Configuration and Preference Checks](#mod-configuration-and-preference-checks)
+- [Murder Loop and Gore Generation](#murder-loop-and-gore-generation)
+- [Suspicion, Alerts, and Loss Conditions](#suspicion-alerts-and-loss-conditions)
+- [Illegal Sight Persistence and Overnight Behaviour](#illegal-sight-persistence-and-overnight-behaviour)
+- [Special Sauce Lifecycle](#special-sauce-lifecycle)
+- [Poisoning Flow](#poisoning-flow)
+- [Meat Processing and Dish Coverage](#meat-processing-and-dish-coverage)
+- [Blood Spills and Mess Interactions](#blood-spills-and-mess-interactions)
+- [Trash Bag Handling](#trash-bag-handling)
+- [Appliance and Provider Availability](#appliance-and-provider-availability)
+- [Visual and Audio Feedback](#visual-and-audio-feedback)
+- [Automation and Edge Cases](#automation-and-edge-cases)
+- [User Interface Assets](#user-interface-assets)
 
 <a id="mod-configuration-and-preference-checks"></a>
-## 1. Mod Configuration and Preference Checks [🔝](#top)
+## Mod Configuration and Preference Checks [🔝](#top)
 - **Test: Mystery Meat preference page exposes all controls.**
   - Steps:
     1. Open the in-run pause menu and navigate to the Mystery Meat preferences section.
@@ -47,7 +53,7 @@
     - Informational and verbose notes appear after elevating the preference.
 
 <a id="murder-loop-and-gore-generation"></a>
-## 2. Murder Loop and Gore Generation [🔝](#top)
+## Murder Loop and Gore Generation [🔝](#top)
 - **Test: Meat Cleaver kills diners in every seating state.**
   - Steps:
     1. Acquire the cleaver from its provider.
@@ -76,7 +82,7 @@
     - The group indicator despawns after all members are dead or have left.
 
 <a id="suspicion-alerts-and-loss-conditions"></a>
-## 3. Suspicion, Alerts, and Loss Conditions [🔝](#top)
+## Suspicion, Alerts, and Loss Conditions [🔝](#top)
 - **Test: Suspicion indicator attaches to every new diner.**
   - Steps:
     1. Start a day and watch arriving diners, including variants such as cats.
@@ -107,7 +113,7 @@
     - The run loses a life immediately upon exit and the diner despawns.
 
 <a id="illegal-sight-persistence-and-overnight-behaviour"></a>
-## 4. Illegal Sight Persistence and Overnight Behaviour [🔝](#top)
+## Illegal Sight Persistence and Overnight Behaviour [🔝](#top)
 - **Test: Corpses rot without Persistent Corpses.**
   - Steps:
     1. Kill a diner, leave the corpse on the floor, end the day.
@@ -136,7 +142,7 @@
     - The trash bag still contains the carcass next day, and the bag visuals reflect the filled state.
 
 <a id="special-sauce-lifecycle"></a>
-## 5. Special Sauce Lifecycle [🔝](#top)
+## Special Sauce Lifecycle [🔝](#top)
 - **Test: Empty bottles fill from fresh blood.**
   - Steps:
     1. Hold an empty special sauce bottle.
@@ -162,7 +168,7 @@
     - The bottle converts to the empty version and can be refilled from blood puddles.
 
 <a id="poisoning-flow"></a>
-## 6. Poisoning Flow [🔝](#top)
+## Poisoning Flow [🔝](#top)
 - **Test: Manual poisoning contaminates held food.**
   - Steps:
     1. Hold a poison bottle and interact with a counter holding ready-to-serve food.
@@ -185,7 +191,7 @@
     - The second attempt does not replay the sound or alter the item further.
 
 <a id="meat-processing-and-dish-coverage"></a>
-## 7. Meat Processing and Dish Coverage [🔝](#top)
+## Meat Processing and Dish Coverage [🔝](#top)
 - **Test: Grindable items feed both grinders.**
   - Steps:
     1. Load Mystery Meat into the manual grinder and complete the process.
@@ -221,7 +227,8 @@
   - Expected Results:
     - Each main can accept the special sauce extra without breaking the order flow.
 
-## 8. Blood Spills and Mess Interactions [🔝](#top)
+<a id="blood-spills-and-mess-interactions"></a>
+## Blood Spills and Mess Interactions [🔝](#top)
 - **Test: Blood puddle stages stack.**
   - Steps:
     1. Allow multiple spills to spawn in the same location without cleaning.
@@ -238,7 +245,8 @@
   - Expected Results:
     - The puddle disappears and no bottle is filled.
 
-## 9. Trash Bag Handling [🔝](#top)
+<a id="trash-bag-handling"></a>
+## Trash Bag Handling [🔝](#top)
 - **Test: Bag stores a corpse and reveals stage art.**
   - Steps:
     1. Pick up a trash bag, interact with a corpse.
@@ -250,7 +258,8 @@
   - Expected Results:
     - The corpse returns to the player or surface with the same remaining portion count.
 
-## 10. Appliance and Provider Availability [🔝](#top)
+<a id="appliance-and-provider-availability"></a>
+## Appliance and Provider Availability [🔝](#top)
 - **Test: Providers respect unlock chains.**
   - Steps:
     1. Attempt to purchase the casings provider before owning the cleaver provider.
@@ -270,7 +279,8 @@
   - Expected Results:
     - The provider restocks after its cooldown, allowing further bottles to be drawn.
 
-## 11. Visual and Audio Feedback [🔝](#top)
+<a id="visual-and-audio-feedback"></a>
+## Visual and Audio Feedback [🔝](#top)
 - **Test: Suspicion indicator always faces the camera.**
   - Steps:
     1. Circle around a diner while the indicator is visible.
@@ -287,7 +297,8 @@
   - Expected Results:
     - Visible liquid segments disappear in sync with the remaining charges.
 
-## 12. Automation and Edge Cases [🔝](#top)
+<a id="automation-and-edge-cases"></a>
+## Automation and Edge Cases [🔝](#top)
 - **Test: Automated poisoners respect reachability.**
   - Steps:
     1. Set up an automated poisoner facing a blocked tile.
@@ -304,7 +315,8 @@
   - Expected Results:
     - Each table consumes the correct number of charges without cross-contamination or resets.
 
-## 13. User Interface Assets [🔝](#top)
+<a id="user-interface-assets"></a>
+## User Interface Assets [🔝](#top)
 - **Test: Grind sprite appears in process prompts.**
   - Steps:
     1. View any prompt that references the grind process.
