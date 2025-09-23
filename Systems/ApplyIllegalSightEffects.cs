@@ -8,6 +8,7 @@ using KitchenMods;
 using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Systems.Effects;
+using KitchenMysteryMeat.Systems.Logging;
 using Unity.Collections;
 using Unity.Entities;
 

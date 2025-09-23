@@ -9,6 +9,7 @@ using KitchenMysteryMeat;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Items;
 using KitchenMysteryMeat.Systems;
+using KitchenMysteryMeat.Systems.Logging;
 using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems.Effects

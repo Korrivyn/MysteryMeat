@@ -19,6 +19,7 @@ using PreferenceSystem;
 using KitchenMysteryMeat.Customs.Cards;
 using KitchenMysteryMeat.Enums;
 using KitchenMysteryMeat.Systems;
+using KitchenMysteryMeat.Systems.Logging;
 
 namespace KitchenMysteryMeat
 {
@@ -78,7 +79,8 @@ namespace KitchenMysteryMeat
 
         protected override void OnInitialise()
         {
-            Logger.LogWarning($"{MOD_GUID} v{ModVersion} in use!");
+            // Emit a startup warning through the debug helper so it respects the configured verbosity.
+            DebugLogSystem.LogWarning($"{MOD_GUID} v{ModVersion} in use!");
         }
 
         protected override void OnUpdate()
@@ -90,11 +92,8 @@ namespace KitchenMysteryMeat
             Bundle = mod.GetPacks<AssetBundleModPack>().SelectMany(e => e.AssetBundles).FirstOrDefault() ?? throw new MissingAssetBundleException(MOD_GUID);
             Logger = InitLogger();
 
-            // Registers the mod logger with the debug helper immediately so future log calls reuse the shared reference.
-            DebugLogSystem.Initialize(Logger);
-
-            // Configures the debug logging helper immediately after the logger is created.
-            DebugLogSystem.Configure(Logger, () => ActiveDebugLogLevel);
+            // Initialise the debug helper immediately so all subsequent log calls share the same configuration.
+            DebugLogSystem.Initialise(Logger, () => ActiveDebugLogLevel);
 
             Bundle.LoadAllAssets<Texture2D>();
             Bundle.LoadAllAssets<Sprite>();
