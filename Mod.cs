@@ -267,6 +267,10 @@ namespace KitchenMysteryMeat
             };
         }
         
+        /// <summary>
+        /// Loads the stab, poison, and alert audio assets into the game's referable clip registry.
+        /// </summary>
+        /// <param name="gameData">The game data collection that receives the mod-specific sound effects.</param>
         private void SetupSFX(GameData gameData)
         {
             #region Stab
