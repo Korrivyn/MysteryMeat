@@ -59,19 +59,22 @@ namespace KitchenMysteryMeat.Systems
                     }
 
                     // Inspect each grab point on the table to locate a special sauce holder.
-                    foreach (var table in cTableSetGrabPoints)
+                    foreach (var tableGrabPoint in cTableSetGrabPoints)
                     {
+                        // Cache the grab point entity to streamline repeated references within the loop.
+                        Entity grabPoint = tableGrabPoint.GrabPoint;
+
                         // Guard: ensure a holder exists so sauce can be dispensed from the grab point.
-                        if (!Require<CItemHolder>(table, out var citemHolder))
+                        if (!Require<CItemHolder>(grabPoint, out var citemHolder))
                         {
-                            DebugLogSystem.LogWarning($"[SpecialSauceServing] Grab point entity {table.Index} lacks an item holder for table {cAssignedTable.Table.Index}.");
+                            DebugLogSystem.LogWarning($"[SpecialSauceServing] Grab point entity {grabPoint.Index} lacks an item holder for table {cAssignedTable.Table.Index}.");
                             continue;
                         }
 
                         // Guard: confirm the holder currently stores a limited-use sauce bottle ready for dispensing.
                         if (citemHolder.HeldItem == Entity.Null)
                         {
-                            DebugLogSystem.LogWarning($"[SpecialSauceServing] Item holder entity {table.Index} has no held item while serving group {group.Index}.");
+                            DebugLogSystem.LogWarning($"[SpecialSauceServing] Item holder entity {grabPoint.Index} has no held item while serving group {group.Index}.");
                             continue;
                         }
 
