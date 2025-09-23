@@ -25,4 +25,4 @@ Install the listed mods via the Steam Workshop, ensuring the directory names abo
 ## Documentation
 
 - [Feature Catalog](FEATURES.md)
-- [Mystery Meat QA Rubric](QA_RUBRIC.md)
+- [QA Rubric](QA_RUBRIC.md)
