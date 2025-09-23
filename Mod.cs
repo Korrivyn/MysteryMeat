@@ -106,17 +106,25 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
-        /// Handles initial mod setup and prepares logging and preferences ahead of activation.
+        /// Handles initial mod setup by preparing core systems, registering cards, and subscribing to runtime hooks.
         /// </summary>
         protected override void OnInitialise()
         {
-            // Attempt to prepare logging, preferences, and assets that do not require the activation context.
-            bool isReady = EnsureInitialisation(null);
+            // Prepare logging and preferences so subsequent operations can query configuration safely.
+            bool coreReady = EnsureCoreInitialisation();
 
-            // Guard: log that asset loading will complete during activation when not all systems are ready yet.
-            if (!isReady)
+            // Guard: abort further setup when the logger or preferences are unavailable.
+            if (!coreReady)
             {
-                DebugLogSystem.LogVerbose("Initial asset loading deferred until activation because the mod context has not been supplied.");
+                DebugLogSystem.LogError("Mystery Meat failed to initialise its core systems; runtime registrations have been skipped to avoid inconsistent state.");
+            }
+            else
+            {
+                // Register enabled cards during initialisation so gameplay reflects the configured preferences immediately.
+                RegisterEnabledCards();
+
+                // Subscribe to BuildGameData once so later activation phases can safely supply assets.
+                SubscribeToBuildGameDataEvent();
             }
         }
 
@@ -128,47 +136,21 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
-        /// Handles asset loading and preference initialisation after the mod is activated.
+        /// Handles post-activation duties by ensuring assets are available and displaying the mod banner.
         /// </summary>
+        /// <param name="mod">The activation context supplied by KitchenLib.</param>
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
-            // Validate the full initialisation sequence using the activation context supplied by the framework.
-            bool isReady = EnsureInitialisation(mod);
+            // Load the asset bundle using the activation context so runtime systems have access to shared resources.
+            bool assetsReady = EnsureAssetBundle(mod);
 
-            // Guard: abort runtime registrations when the initialisation failed to acquire assets or preferences.
-            if (!isReady)
+            // Guard: display the banner only when assets are ready to prevent misleading confirmation messages.
+            if (assetsReady)
             {
-                DebugLogSystem.LogError("Mystery Meat initialisation failed; runtime hooks and event subscriptions have been skipped to avoid null reference issues.");
-            }
-            else
-            {
-                // Emit a startup info post through the debug helper so it respects the configured verbosity.
                 DebugLogSystem.LogInfo(ModLoadedBanner);
 
-                // Collates enabled card registrations so duplicate preference checks are avoided.
-                (bool IsEnabled, Action RegisterCard)[] cardRegistrations =
-                {
-                    (PrefManager.Get<bool>(CAUTIOUS_CROWD_ENABLED_ID), () => AddGameDataObject<CautiousCrowdCard>()),
-                    (PrefManager.Get<bool>(MESSY_MURDER_ENABLED_ID), () => AddGameDataObject<MessyMurderCard>()),
-                    (PrefManager.Get<bool>(PERSISTENT_CORPSES_ENABLED_ID), () => AddGameDataObject<PersistentCorpsesCard>())
-                };
-
-                // Register each enabled card so gameplay content matches the configured preferences.
-                foreach ((bool IsEnabled, Action RegisterCard) cardRegistration in cardRegistrations)
-                {
-                    // Guard: only register the card when the associated preference is enabled.
-                    if (cardRegistration.IsEnabled)
-                    {
-                        cardRegistration.RegisterCard();
-                    }
-                }
-
-                // Guard: subscribe to the build event only once all assets are ready and the handler has not been registered.
-                if (!_buildGameDataSubscribed && IsRuntimeReady())
-                {
-                    Events.BuildGameDataEvent += OnBuildGameData;
-                    _buildGameDataSubscribed = true;
-                }
+                // Ensure event subscriptions occur once activation has provided the required assets.
+                SubscribeToBuildGameDataEvent();
             }
         }
 
@@ -177,18 +159,22 @@ namespace KitchenMysteryMeat
         /// </summary>
         /// <param name="mod">The activation context that exposes asset bundles when available.</param>
         /// <returns>True when the assets and preferences required for runtime hooks are ready.</returns>
-        private bool EnsureInitialisation(KitchenMods.Mod mod)
+        /// <summary>
+        /// Ensures the mod logger and preference manager are available before runtime hooks are registered.
+        /// </summary>
+        /// <returns>True when both the logger and preference manager have been initialised successfully.</returns>
+        private bool EnsureCoreInitialisation()
         {
-            // Ensure the logger exists so subsequent operations can emit diagnostics.
+            // Initialise the logger when it has not yet been created so diagnostics can be emitted reliably.
             if (Logger == null)
             {
                 Logger = InitLogger();
             }
 
-            // Align the debug helper with the active logger reference even when the logger was already available.
+            // Synchronise the debug helper with the logger reference even when the logger already existed.
             DebugLogSystem.Initialise(Logger, () => ActiveDebugLogLevel);
 
-            // Guard: skip preference construction when the manager has already been initialised.
+            // Guard: construct the preference manager exactly once so menu registration is idempotent.
             if (PrefManager == null)
             {
                 IntArrayGenerator intArrayGenerator = new IntArrayGenerator();
@@ -294,52 +280,129 @@ namespace KitchenMysteryMeat
                 PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
             }
 
-            // Determine whether the asset bundle requires loading and whether the activation context is available.
+            bool isReady = Logger != null && PrefManager != null;
+            return isReady;
+        }
+
+        /// <summary>
+        /// Ensures the mod asset bundle is available and configured once activation has supplied the context.
+        /// </summary>
+        /// <param name="mod">The activation context that exposes asset bundles.</param>
+        /// <returns>True when the asset bundle is ready for use.</returns>
+        private bool EnsureAssetBundle(KitchenMods.Mod mod)
+        {
+            // Determine whether the asset bundle still requires loading so redundant lookups are avoided.
             bool assetsReady = Bundle != null;
 
-            // Guard: attempt to load the asset bundle when it has not been resolved and the activation context is available.
-            if (!assetsReady && mod != null)
+            // Guard: attempt to load the asset bundle only when it has not been cached already.
+            if (!assetsReady)
             {
-                AssetBundle resolvedBundle = mod
-                    .GetPacks<AssetBundleModPack>()
-                    .SelectMany(pack => pack.AssetBundles)
-                    .FirstOrDefault();
-
-                // Guard: confirm the asset bundle has been found before attempting to cache it.
-                if (resolvedBundle != null)
+                // Guard: warn when the activation context has not been supplied yet.
+                if (mod == null)
                 {
-                    Bundle = resolvedBundle;
-
-                    // Preload commonly used assets so runtime lookups occur without additional I/O.
-                    Bundle.LoadAllAssets<Texture2D>();
-                    Bundle.LoadAllAssets<Sprite>();
-
-                    TMP_SpriteAsset spriteAsset = Bundle.LoadAsset<TMP_SpriteAsset>("GrindMeat");
-
-                    // Guard: register the sprite asset as a fallback only once to avoid duplicate references.
-                    if (spriteAsset != null && !TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Contains(spriteAsset))
-                    {
-                        TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Add(spriteAsset);
-                    }
-
-                    // Guard: configure the sprite asset only when it has been loaded successfully.
-                    if (spriteAsset != null)
-                    {
-                        spriteAsset.material = UnityEngine.Object.Instantiate(TMP_Settings.defaultSpriteAsset.material);
-                        spriteAsset.material.mainTexture = Bundle.LoadAsset<Texture2D>("GrindMeatTex");
-                    }
-
-                    assetsReady = true;
+                    DebugLogSystem.LogWarning("Mystery Meat skipped asset bundle loading because the activation context was not provided.");
                 }
                 else
                 {
-                    DebugLogSystem.LogError("Mystery Meat could not locate its asset bundle during activation; audio registration will be skipped.");
+                    AssetBundle resolvedBundle = mod
+                        .GetPacks<AssetBundleModPack>()
+                        .SelectMany(pack => pack.AssetBundles)
+                        .FirstOrDefault();
+
+                    // Guard: confirm the asset bundle has been found before attempting to cache it.
+                    if (resolvedBundle != null)
+                    {
+                        Bundle = resolvedBundle;
+
+                        // Preload commonly used assets so runtime lookups occur without additional I/O.
+                        Bundle.LoadAllAssets<Texture2D>();
+                        Bundle.LoadAllAssets<Sprite>();
+
+                        TMP_SpriteAsset spriteAsset = Bundle.LoadAsset<TMP_SpriteAsset>("GrindMeat");
+
+                        // Guard: register the sprite asset as a fallback only once to avoid duplicate references.
+                        if (spriteAsset != null && !TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Contains(spriteAsset))
+                        {
+                            TMP_Settings.defaultSpriteAsset.fallbackSpriteAssets.Add(spriteAsset);
+                        }
+
+                        // Guard: configure the sprite asset only when it has been loaded successfully.
+                        if (spriteAsset != null)
+                        {
+                            spriteAsset.material = UnityEngine.Object.Instantiate(TMP_Settings.defaultSpriteAsset.material);
+                            spriteAsset.material.mainTexture = Bundle.LoadAsset<Texture2D>("GrindMeatTex");
+                        }
+
+                        assetsReady = true;
+                    }
+                    else
+                    {
+                        DebugLogSystem.LogError("Mystery Meat could not locate its asset bundle during activation; audio registration will be skipped.");
+                    }
                 }
             }
 
             assetsReady = Bundle != null;
-            bool isReady = assetsReady && PrefManager != null;
-            return isReady;
+            return assetsReady;
+        }
+
+        /// <summary>
+        /// Registers gameplay cards based on the active preference configuration.
+        /// </summary>
+        private void RegisterEnabledCards()
+        {
+            // Guard: ensure preferences are available before querying configuration values.
+            if (PrefManager == null)
+            {
+                DebugLogSystem.LogWarning("Mystery Meat skipped card registration because preferences have not been initialised.");
+            }
+            else
+            {
+                // Collates enabled card registrations so duplicate preference checks are avoided.
+                (bool IsEnabled, Action RegisterCard, string PreferenceId)[] cardRegistrations =
+                {
+                    (PrefManager.Get<bool>(CAUTIOUS_CROWD_ENABLED_ID), () => AddGameDataObject<CautiousCrowdCard>(), CAUTIOUS_CROWD_ENABLED_ID),
+                    (PrefManager.Get<bool>(MESSY_MURDER_ENABLED_ID), () => AddGameDataObject<MessyMurderCard>(), MESSY_MURDER_ENABLED_ID),
+                    (PrefManager.Get<bool>(PERSISTENT_CORPSES_ENABLED_ID), () => AddGameDataObject<PersistentCorpsesCard>(), PERSISTENT_CORPSES_ENABLED_ID)
+                };
+
+                foreach ((bool IsEnabled, Action RegisterCard, string PreferenceId) cardRegistration in cardRegistrations)
+                {
+                    // Guard: only register the card when the associated preference is enabled.
+                    if (cardRegistration.IsEnabled)
+                    {
+                        cardRegistration.RegisterCard();
+
+                        // Provide verbose diagnostics that capture which preference enabled the card.
+                        DebugLogSystem.LogVerbose($"Registered Mystery Meat card using preference '{cardRegistration.PreferenceId}'.");
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Subscribes to the BuildGameData event once so asset-driven modifications can be applied.
+        /// </summary>
+        private void SubscribeToBuildGameDataEvent()
+        {
+            // Guard: avoid duplicate subscriptions which would apply modifications repeatedly.
+            if (_buildGameDataSubscribed)
+            {
+                return;
+            }
+
+            // Guard: ensure runtime dependencies exist before wiring the subscription to prevent null references later.
+            if (PrefManager == null)
+            {
+                DebugLogSystem.LogWarning("Mystery Meat deferred BuildGameData subscription because preferences are unavailable.");
+            }
+            else
+            {
+                Events.BuildGameDataEvent += OnBuildGameData;
+                _buildGameDataSubscribed = true;
+
+                DebugLogSystem.LogVerbose("Mystery Meat subscribed to the BuildGameData event.");
+            }
         }
 
         /// <summary>
