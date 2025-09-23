@@ -1,9 +1,9 @@
 <a id="top"></a>
 [← Back to README](README.md)
 
-# Mystery Meat QA Rubric [🔝](#top)
+# Mystery Meat QA Rubric
 
-## 1. Mod Configuration and Preference Checks [🔝](#top)
+## 1. Mod Configuration and Preference Checks
 - **Test: Mystery Meat preference page exposes all controls.**
   - Steps:
     1. Open the in-run pause menu and navigate to the Mystery Meat preferences section.
