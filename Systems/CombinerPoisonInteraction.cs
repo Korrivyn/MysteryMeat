@@ -68,10 +68,10 @@ namespace KitchenMysteryMeat.Systems
                     continue;
                 }
 
-                // Guard: warn when there is no occupant present to receive the interaction.
+                // Guard: capture verbose breadcrumb when no occupant is available to interact with.
                 if (occupant == Entity.Null)
                 {
-                    DebugLogSystem.LogWarning($"Automated interactor {automatedInteractor.Index} found no occupant at {forwardPosition} when attempting to poison.");
+                    DebugLogSystem.LogVerbose($"Automated interactor {automatedInteractor.Index} found no occupant at {forwardPosition} when attempting to poison.");
                     continue;
                 }
 
