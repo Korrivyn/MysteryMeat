@@ -23,7 +23,7 @@
 
 <a id="implemented"></a>
 ## Implemented [🔝](#top)
-[Open Feature Catalog](FEATURES.md)
+### [Open Feature Catalog](FEATURES.md)
 - **Core Murder Economy** – The murder loop, gore processing, suspicion progression, and overnight decay have shipped together to define the foundation of the mode. See the [Gameplay Systems](FEATURES.md#gameplay-systems) entries for full reference.
 - **Menu and Ingredient Overhaul** – Mystery Meat dishes (burgers, hotdogs, pies) and their supporting ingredients, recipes, and special sauce complete the clandestine dining experience. See [Items](FEATURES.md#items), [Item Groups and Recipes](FEATURES.md#item-groups-and-recipes), and [Dishes and Unlocks](FEATURES.md#dishes-and-unlocks).
 - **Supporting Equipment Suite** – Cleaver, grinder variants, consumable providers, corpse appliances, and blood spill behaviors are all available to run the kitchen. Details live under [Appliances and Environmental Objects](FEATURES.md#appliances-and-environmental-objects).
@@ -33,4 +33,4 @@
 ## Skipped [🔝](#top)
 - _No features are currently marked as skipped._
 
-[Return to README](README.md)
+[Return to README](README.md) | [Open Feature Catalog](FEATURES.md)
