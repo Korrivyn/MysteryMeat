@@ -6,14 +6,19 @@ using KitchenMysteryMeat.Enums;
 namespace KitchenMysteryMeat.Systems.Logging
 {
     /// <summary>
-    /// Provides an opinionated logging facade that honours the configured debug level and enriches
-    /// messages with the Mystery Meat prefix and optional stack traces.
+    /// Provides an opinionated logging facade that honours the configured debug level and appends
+    /// optional stack traces while relying on the Kitchen logger for prefix management.
     /// </summary>
     public static class DebugLogSystem
     {
-        private const string LogPrefix = "[Mystery Meat]";
-
+        /// <summary>
+        /// Holds a reference to the Kitchen logger supplied by the mod framework.
+        /// </summary>
         private static KitchenLogger _logger;
+
+        /// <summary>
+        /// Provides access to the current debug log level preference.
+        /// </summary>
         private static Func<DebugLogLevel> _levelProvider;
 
         /// <summary>
@@ -86,12 +91,13 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             // Resolve the logger so the method can emit error output when available.
             KitchenLogger logger = ResolveLogger();
+            DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Guard: skip logging when the logger is unavailable.
             if (logger != null)
             {
                 // Include stack traces when the configured level permits expanded diagnostics.
-                bool includeStackTrace = GetActiveDebugLogLevel() >= DebugLogLevel.On;
+                bool includeStackTrace = activeLevel >= DebugLogLevel.On;
                 logger.LogError(FormatMessage(message, includeStackTrace));
             }
         }
@@ -149,15 +155,15 @@ namespace KitchenMysteryMeat.Systems.Logging
         }
 
         /// <summary>
-        /// Formats messages with the Mystery Meat prefix and optional stack trace details.
+        /// Formats messages and appends optional stack trace details.
         /// </summary>
         /// <param name="message">The message to format.</param>
         /// <param name="includeStackTrace">A value indicating whether a stack trace should be appended.</param>
         /// <returns>The formatted message ready for logging.</returns>
         private static string FormatMessage(string message, bool includeStackTrace)
         {
-            // Prepend the log prefix so entries remain searchable within the shared log output.
-            string formattedMessage = $"{LogPrefix} {message}";
+            // Default null messages to an empty string before formatting output for the logger.
+            string formattedMessage = message ?? string.Empty;
 
             // Append the stack trace when verbose diagnostics are requested.
             if (includeStackTrace)
