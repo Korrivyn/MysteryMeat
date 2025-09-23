@@ -295,4 +295,3 @@
     - The grind icon renders correctly without missing-glyph markers.
 
 [Return to README](README.md)
-
