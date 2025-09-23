@@ -64,11 +64,12 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
+            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
 
-            // Guard: only emit informational logs when a logger exists and the level is set to On or higher.
-            if (logger != null && activeLevel >= DebugLogLevel.On)
+            // Guard: only emit informational logs when a logger exists and the level is set to On or higher for major transitions.
+            if (logger != null && includeStackTrace)
             {
-                string formattedMessage = FormatMessage(message, activeLevel >= DebugLogLevel.On);
+                string formattedMessage = FormatMessage(message, includeStackTrace);
                 logger.LogInfo(formattedMessage);
             }
         }
@@ -81,11 +82,12 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
+            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
 
-            // Guard: only emit warning logs when a logger exists and the level is set to On or higher.
-            if (logger != null && activeLevel >= DebugLogLevel.On)
+            // Guard: only emit warning logs when a logger exists and players have enabled diagnostic output.
+            if (logger != null && includeStackTrace)
             {
-                string formattedMessage = FormatMessage(message, activeLevel >= DebugLogLevel.On);
+                string formattedMessage = FormatMessage(message, includeStackTrace);
                 logger.LogWarning(formattedMessage);
             }
         }
@@ -98,11 +100,12 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
+            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
 
             // Guard: only emit errors when a logger reference is available; errors always log even when verbosity is Off.
             if (logger != null)
             {
-                string formattedMessage = FormatMessage(message, activeLevel >= DebugLogLevel.On);
+                string formattedMessage = FormatMessage(message, includeStackTrace);
                 logger.LogError(formattedMessage);
             }
         }
@@ -115,11 +118,12 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
+            bool isVerboseEnabled = activeLevel >= DebugLogLevel.Verbose;
 
             // Guard: only emit verbose logs when the logger exists and the level is explicitly set to Verbose.
-            if (logger != null && activeLevel >= DebugLogLevel.Verbose)
+            if (logger != null && isVerboseEnabled)
             {
-                string formattedMessage = FormatMessage(message, true);
+                string formattedMessage = FormatMessage(message, isVerboseEnabled);
                 logger.LogInfo(formattedMessage);
             }
         }
@@ -132,14 +136,26 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
+            bool isVerboseEnabled = activeLevel >= DebugLogLevel.Verbose;
 
             // Guard: bail out when verbose logging is disabled or the logger reference is missing so expensive message construction can be skipped.
-            if (logger != null && activeLevel >= DebugLogLevel.Verbose)
+            if (logger != null && isVerboseEnabled)
             {
-                // Build the verbose message when a builder has been supplied to avoid null dereferences.
-                string message = messageBuilder != null ? messageBuilder.Invoke() : string.Empty;
-                string formattedMessage = FormatMessage(message, true);
-                logger.LogInfo(formattedMessage);
+                string message = string.Empty;
+                bool hasMessageBuilder = messageBuilder != null;
+
+                // Guard: only invoke the builder when the caller supplied one to avoid null reference exceptions.
+                if (hasMessageBuilder)
+                {
+                    message = messageBuilder.Invoke() ?? string.Empty;
+                }
+
+                // Guard: skip logging when no message content is produced after invoking the builder.
+                if (hasMessageBuilder && !string.IsNullOrWhiteSpace(message))
+                {
+                    string formattedMessage = FormatMessage(message, isVerboseEnabled);
+                    logger.LogInfo(formattedMessage);
+                }
             }
         }
 

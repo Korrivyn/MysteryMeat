@@ -92,6 +92,7 @@ namespace KitchenMysteryMeat
         {
             get
             {
+                // Default to Off so startup remains quiet if preferences are unavailable during bootstrap.
                 DebugLogLevel activeLevel = DebugLogLevel.Off;
 
                 // Guard: skip preference lookups until the manager has been initialised by the mod bootstrap sequence.
