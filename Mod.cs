@@ -34,8 +34,26 @@ namespace KitchenMysteryMeat
 
         internal static AssetBundle Bundle;
         internal static KitchenLogger Logger;
+
+        /// <summary>
+        /// Represents the expected asset bundle file name that contains the mod content.
+        /// </summary>
+        private const string AssetBundleFileName = "mod.assets";
+
+        /// <summary>
+        /// Tracks whether BuildGameData has been subscribed for the current activation cycle.
+        /// </summary>
         private static bool _buildGameDataSubscribed;
+
+        /// <summary>
+        /// Tracks whether the enabled cards have been registered during the current activation cycle.
+        /// </summary>
         private static bool _cardsRegistered;
+
+        /// <summary>
+        /// Records whether runtime hook registration deferral has already been logged.
+        /// </summary>
+        private static bool _runtimeHooksDeferredLogged;
 
         /// <summary>
         /// Gets the ASCII art banner displayed when the mod is initialised.
@@ -112,10 +130,45 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
+        /// Resets cached runtime state so every activation begins from a clean slate.
+        /// </summary>
+        private void ResetInitialisationState()
+        {
+            // Guard: detach from BuildGameData when a previous activation already registered the handler.
+            if (_buildGameDataSubscribed)
+            {
+                Events.BuildGameDataEvent -= OnBuildGameData;
+                _buildGameDataSubscribed = false;
+            }
+
+            // Guard: release any loaded asset bundle before attempting to resolve a fresh instance.
+            if (Bundle != null)
+            {
+                Bundle.Unload(true);
+            }
+
+            Bundle = null;
+            Logger = null;
+            PrefManager = null;
+            _cardsRegistered = false;
+            _runtimeHooksDeferredLogged = false;
+
+            // Guard: clear the cached activation context so reflection resolves the current mod instance.
+            _cachedActivationContext = null;
+            _activationContextWarningLogged = false;
+
+            // Reset the debug log system to discard stale logger references between activations.
+            DebugLogSystem.Initialise(null, () => ActiveDebugLogLevel);
+        }
+
+        /// <summary>
         /// Handles initial mod setup by preparing core systems and queuing runtime hook registration.
         /// </summary>
         protected override void OnInitialise()
         {
+            // Reset static caches to ensure reactivations begin from a known-good state.
+            ResetInitialisationState();
+
             // Prepare logging and preferences so subsequent operations can query configuration safely.
             bool coreReady = EnsureCoreInitialisation();
 
@@ -137,11 +190,8 @@ namespace KitchenMysteryMeat
                 DebugLogSystem.LogError("Mystery Meat failed to initialise its asset bundle; runtime registrations have been skipped to avoid inconsistent state.");
             }
 
-            if (coreReady && assetsReady)
-            {
-                // Attempt to register runtime hooks so they activate automatically once dependencies are available.
-                TryRegisterRuntimeHooks();
-            }
+            // Attempt to register runtime hooks so they activate automatically once dependencies are available.
+            TryRegisterRuntimeHooks();
         }
 
         /// <summary>
@@ -149,6 +199,11 @@ namespace KitchenMysteryMeat
         /// </summary>
         protected override void OnUpdate()
         {
+            // Guard: retry runtime hook registration until both cards and game data subscriptions succeed.
+            if (!_cardsRegistered || !_buildGameDataSubscribed)
+            {
+                TryRegisterRuntimeHooks();
+            }
         }
 
         /// <summary>
@@ -160,13 +215,25 @@ namespace KitchenMysteryMeat
             // Capture the activation context in case initialisation occurs before the framework exposes the instance.
             CacheActivationContext(mod);
 
-            // Guard: refresh the asset bundle if initialisation occurred before the activation context was available.
-            if (Bundle == null)
+            // Prepare core services again in case dependencies became available only after activation.
+            bool coreReady = EnsureCoreInitialisation();
+
+            // Resolve the asset bundle once the activation context has been provided explicitly.
+            bool assetsReady = EnsureAssetBundle(mod);
+
+            // Guard: surface core readiness issues so diagnostics remain visible after activation.
+            if (!coreReady)
             {
-                EnsureAssetBundle(mod);
+                DebugLogSystem.LogError("Mystery Meat activation completed without initialising its core systems; runtime registration will continue retrying until dependencies load.");
             }
 
-            // Guard: retry runtime hook registration in case assets became available after initialisation completed.
+            // Guard: surface asset readiness issues once activation has supplied the bundle context.
+            if (!assetsReady && mod != null)
+            {
+                DebugLogSystem.LogError("Mystery Meat activation completed without resolving its asset bundle; runtime registration will continue retrying until the bundle loads.");
+            }
+
+            // Attempt to register runtime hooks now that activation has supplied every dependency.
             TryRegisterRuntimeHooks();
 
             // Guard: report when the runtime is not ready so the banner reflects the activation status accurately.
@@ -196,110 +263,125 @@ namespace KitchenMysteryMeat
             // Synchronise the debug helper with the logger reference even when the logger already existed.
             DebugLogSystem.Initialise(Logger, () => ActiveDebugLogLevel);
 
+            // Guard: surface when the logger could not be initialised so fallback logging expectations are clear.
+            if (Logger == null)
+            {
+                DebugLogSystem.LogError("Mystery Meat failed to initialise its dedicated logger; Unity console output will be used as a fallback.");
+            }
+
             // Guard: construct the preference manager exactly once so menu registration is idempotent.
             if (PrefManager == null)
             {
-                IntArrayGenerator intArrayGenerator = new IntArrayGenerator();
-
-                // Generates percentage values for shared audio preference controls.
-                intArrayGenerator.AddRange(0, 100, 10, null, delegate (string prefKey, int value)
+                try
                 {
-                    return $"{value}%";
-                });
+                    IntArrayGenerator intArrayGenerator = new IntArrayGenerator();
 
-                int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
-                string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
-                int[] debugLogLevelValues =
-                {
-                    (int)DebugLogLevel.Off,
-                    (int)DebugLogLevel.On,
-                    (int)DebugLogLevel.Verbose
-                };
-                string[] debugLogLevelLabels =
-                {
-                    "Off",
-                    "On",
-                    "Verbose"
-                };
-                intArrayGenerator.Clear();
+                    // Generates percentage values for shared audio preference controls.
+                    intArrayGenerator.AddRange(0, 100, 10, null, delegate (string prefKey, int value)
+                    {
+                        return $"{value}%";
+                    });
 
-                PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
+                    int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
+                    string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
+                    int[] debugLogLevelValues =
+                    {
+                        (int)DebugLogLevel.Off,
+                        (int)DebugLogLevel.On,
+                        (int)DebugLogLevel.Verbose
+                    };
+                    string[] debugLogLevelLabels =
+                    {
+                        "Off",
+                        "On",
+                        "Verbose"
+                    };
+                    intArrayGenerator.Clear();
 
-                PrefManager
-                    .AddLabel("Mystery Meat")
+                    PrefManager = new PreferenceSystemManager(MOD_GUID, MOD_NAME);
+
+                    PrefManager
+                        .AddLabel("Mystery Meat")
+                        .AddSpacer()
+                        .AddSubmenu("Audio Settings", "AudioSubmenu")
+                            .AddLabel("Audio Settings")
+                            .AddSpacer()
+                            .AddLabel("Meat Grinder Volume")
+                            .AddOption<int>(
+                                MEAT_GRINDER_VOLUME_ID,
+                                50,
+                                zeroToHundredPercentValues,
+                                zeroToHundredPercentStrings)
+                            .AddLabel("Stab Volume")
+                            .AddOption<int>(
+                                STAB_VOLUME_ID,
+                                50,
+                                zeroToHundredPercentValues,
+                                zeroToHundredPercentStrings)
+                            .AddLabel("Suspicion Volume")
+                            .AddOption<int>(
+                                SUSPICION_VOLUME_ID,
+                                50,
+                                zeroToHundredPercentValues,
+                                zeroToHundredPercentStrings)
+                            .AddLabel("Alert Volume")
+                            .AddOption<int>(
+                                ALERT_VOLUME_ID,
+                                50,
+                                zeroToHundredPercentValues,
+                                zeroToHundredPercentStrings)
+                            .AddSpacer()
+                            .AddSpacer()
+                            .SubmenuDone()
+                        .AddSubmenu("Card Settings", "CardSubmenu")
+                            .AddLabel("Card Settings")
+                            .AddInfo("Any changes require a restart.")
+                            .AddLabel("Cautious Crowd")
+                            .AddOption<bool>(
+                                CAUTIOUS_CROWD_ENABLED_ID,
+                                true,
+                                [true, false],
+                                ["Enabled", "Disabled"]
+                            )
+                            .AddLabel("Messy Murder")
+                            .AddOption<bool>(
+                                MESSY_MURDER_ENABLED_ID,
+                                true,
+                                [true, false],
+                                ["Enabled", "Disabled"]
+                            )
+                            .AddLabel("Persistent Corpses")
+                            .AddOption<bool>(
+                                PERSISTENT_CORPSES_ENABLED_ID,
+                                true,
+                                [true, false],
+                                ["Enabled", "Disabled"]
+                            )
+                            .AddSpacer()
+                            .AddSpacer()
+                            .SubmenuDone()
+                        // Adds debug settings for controlling log output verbosity.
+                        .AddSubmenu("Debug Settings", "DebugSubmenu")
+                            .AddLabel("Debug Settings")
+                            .AddOption<int>(
+                                DEBUG_LOG_LEVEL_ID,
+                                (int)DebugLogLevel.Off,
+                                debugLogLevelValues,
+                                debugLogLevelLabels)
+                            .AddSpacer()
+                            .AddSpacer()
+                            .SubmenuDone()
                     .AddSpacer()
-                    .AddSubmenu("Audio Settings", "AudioSubmenu")
-                        .AddLabel("Audio Settings")
-                        .AddSpacer()
-                        .AddLabel("Meat Grinder Volume")
-                        .AddOption<int>(
-                            MEAT_GRINDER_VOLUME_ID,
-                            50,
-                            zeroToHundredPercentValues,
-                            zeroToHundredPercentStrings)
-                        .AddLabel("Stab Volume")
-                        .AddOption<int>(
-                            STAB_VOLUME_ID,
-                            50,
-                            zeroToHundredPercentValues,
-                            zeroToHundredPercentStrings)
-                        .AddLabel("Suspicion Volume")
-                        .AddOption<int>(
-                            SUSPICION_VOLUME_ID,
-                            50,
-                            zeroToHundredPercentValues,
-                            zeroToHundredPercentStrings)
-                        .AddLabel("Alert Volume")
-                        .AddOption<int>(
-                            ALERT_VOLUME_ID,
-                            50,
-                            zeroToHundredPercentValues,
-                            zeroToHundredPercentStrings)
-                        .AddSpacer()
-                        .AddSpacer()
-                        .SubmenuDone()
-                    .AddSubmenu("Card Settings", "CardSubmenu")
-                        .AddLabel("Card Settings")
-                        .AddInfo("Any changes require a restart.")
-                        .AddLabel("Cautious Crowd")
-                        .AddOption<bool>(
-                            CAUTIOUS_CROWD_ENABLED_ID,
-                            true,
-                            [true, false],
-                            ["Enabled", "Disabled"]
-                        )
-                        .AddLabel("Messy Murder")
-                        .AddOption<bool>(
-                            MESSY_MURDER_ENABLED_ID,
-                            true,
-                            [true, false],
-                            ["Enabled", "Disabled"]
-                        )
-                        .AddLabel("Persistent Corpses")
-                        .AddOption<bool>(
-                            PERSISTENT_CORPSES_ENABLED_ID,
-                            true,
-                            [true, false],
-                            ["Enabled", "Disabled"]
-                        )
-                        .AddSpacer()
-                        .AddSpacer()
-                        .SubmenuDone()
-                    // Adds debug settings for controlling log output verbosity.
-                    .AddSubmenu("Debug Settings", "DebugSubmenu")
-                        .AddLabel("Debug Settings")
-                        .AddOption<int>(
-                            DEBUG_LOG_LEVEL_ID,
-                            (int)DebugLogLevel.Off,
-                            debugLogLevelValues,
-                            debugLogLevelLabels)
-                        .AddSpacer()
-                        .AddSpacer()
-                        .SubmenuDone()
-                .AddSpacer()
-                .AddSpacer();
+                    .AddSpacer();
 
-                PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
+                    PrefManager.RegisterMenu(PreferenceSystemManager.MenuType.PauseMenu);
+                }
+                catch (Exception ex)
+                {
+                    PrefManager = null;
+
+                    DebugLogSystem.LogError($"Mystery Meat failed to initialise preferences: {ex}");
+                }
             }
 
             bool isReady = Logger != null && PrefManager != null;
@@ -326,10 +408,7 @@ namespace KitchenMysteryMeat
                 }
                 else
                 {
-                    AssetBundle resolvedBundle = mod
-                        .GetPacks<AssetBundleModPack>()
-                        .SelectMany(pack => pack.AssetBundles)
-                        .FirstOrDefault();
+                    AssetBundle resolvedBundle = ResolveMysteryMeatAssetBundle(mod);
 
                     // Guard: confirm the asset bundle has been found before attempting to cache it.
                     if (resolvedBundle != null)
@@ -410,6 +489,66 @@ namespace KitchenMysteryMeat
         }
 
         /// <summary>
+        /// Resolves the Mystery Meat asset bundle from the provided activation context in a deterministic manner.
+        /// </summary>
+        /// <param name="mod">The activation context exposing the available asset bundles.</param>
+        /// <returns>The resolved asset bundle when located; otherwise, null.</returns>
+        private AssetBundle ResolveMysteryMeatAssetBundle(KitchenMods.Mod mod)
+        {
+            AssetBundle resolvedBundle = null;
+
+            // Gather all available asset bundles so signature matching can occur deterministically.
+            List<AssetBundle> candidateBundles = mod
+                .GetPacks<AssetBundleModPack>()
+                .SelectMany(pack => pack.AssetBundles ?? Enumerable.Empty<AssetBundle>())
+                .Where(bundle => bundle != null)
+                .ToList();
+
+            // Guard: attempt to match the expected bundle file name before falling back to signature checks.
+            resolvedBundle = candidateBundles
+                .FirstOrDefault(bundle => string.Equals(bundle.name, AssetBundleFileName, StringComparison.OrdinalIgnoreCase));
+
+            // Guard: fall back to signature matching when the canonical bundle name could not be located.
+            if (resolvedBundle == null)
+            {
+                resolvedBundle = candidateBundles.FirstOrDefault(BundleContainsSignatureAsset);
+            }
+
+            // Guard: provide a warning when no candidate satisfied the heuristics but bundles were still present.
+            if (resolvedBundle == null && candidateBundles.Count > 0)
+            {
+                DebugLogSystem.LogWarning("Mystery Meat detected asset bundles but none matched the expected signature; defaulting to the first candidate.");
+                resolvedBundle = candidateBundles[0];
+            }
+
+            return resolvedBundle;
+        }
+
+        /// <summary>
+        /// Determines whether the provided asset bundle contains the expected signature assets for Mystery Meat.
+        /// </summary>
+        /// <param name="bundle">The asset bundle to inspect.</param>
+        /// <returns>True when the bundle contains known Mystery Meat assets; otherwise, false.</returns>
+        private static bool BundleContainsSignatureAsset(AssetBundle bundle)
+        {
+            bool containsSignature = false;
+
+            // Guard: ensure the bundle reference is valid before inspecting its contents.
+            if (bundle != null)
+            {
+                string[] assetNames = bundle.GetAllAssetNames();
+
+                // Guard: attempt to locate the GrindMeat assets which uniquely identify the bundle.
+                if (assetNames != null && assetNames.Any(assetName => assetName.IndexOf("grindmeat", StringComparison.OrdinalIgnoreCase) >= 0))
+                {
+                    containsSignature = true;
+                }
+            }
+
+            return containsSignature;
+        }
+
+        /// <summary>
         /// Registers gameplay cards based on the active preference configuration.
         /// </summary>
         private void RegisterEnabledCards()
@@ -453,10 +592,17 @@ namespace KitchenMysteryMeat
             // Guard: defer registration until both assets and preferences are available.
             if (!runtimeReady)
             {
-                DebugLogSystem.LogVerbose("Mystery Meat deferred runtime hook registration because assets or preferences are still initialising.");
+                // Guard: log the deferral only once per activation to avoid spamming verbose output.
+                if (!_runtimeHooksDeferredLogged)
+                {
+                    DebugLogSystem.LogVerbose("Mystery Meat deferred runtime hook registration because assets or preferences are still initialising.");
+                    _runtimeHooksDeferredLogged = true;
+                }
             }
             else
             {
+                _runtimeHooksDeferredLogged = false;
+
                 // Guard: register cards only once per activation to avoid duplicate game data objects.
                 if (!_cardsRegistered)
                 {
