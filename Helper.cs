@@ -11,11 +11,22 @@ namespace KitchenMysteryMeat
 {
     public static class Helper
     {
+        /// <summary>
+        /// Loads a prefab from the mod asset bundle by the provided asset name.
+        /// </summary>
+        /// <param name="name">The name of the prefab asset to load.</param>
+        /// <returns>The prefab associated with the given name.</returns>
         public static GameObject GetPrefab(string name)
         {
             return Mod.Bundle.LoadAsset<GameObject>(name);
         }
 
+        /// <summary>
+        /// Configures a thin counter to supply a limited item, optionally wiring the held item position if available.
+        /// </summary>
+        /// <param name="counterPrefab">The counter prefab that will provide the item.</param>
+        /// <param name="itemPrefab">The item prefab that should be spawned on the counter.</param>
+        /// <param name="hasHeldItemPosition">Indicates whether the counter prefab exposes a held item position.</param>
         internal static void SetupThinCounterLimitedItem(GameObject counterPrefab, GameObject itemPrefab, bool hasHeldItemPosition)
         {
             Transform holdTransform = GameObjectUtils.GetChildObject(counterPrefab, "GameObject").transform;
@@ -24,6 +35,7 @@ namespace KitchenMysteryMeat
 
             var sourceView = counterPrefab.TryAddComponent<LimitedItemSourceView>();
 
+            // Only apply the held item position if the counter prefab defines one for held items.
             if (hasHeldItemPosition)
             {
                 sourceView.HeldItemPosition = holdTransform;
@@ -35,7 +47,11 @@ namespace KitchenMysteryMeat
             });
         }
 
-        // https://github.com/DepletedNova/IngredientLib/blob/8e6e319e027327a9cd8aa188863614c47dd4c698/Util/Helper.cs#L51C9-L63C10
+        /// <summary>
+        /// Configures a standard counter to supply a limited item via its hold point.
+        /// </summary>
+        /// <param name="counterPrefab">The counter prefab that will source the item.</param>
+        /// <param name="itemPrefab">The limited item prefab to load into the counter.</param>
         internal static void SetupCounterLimitedItem(GameObject counterPrefab, GameObject itemPrefab)
         {
             Transform holdTransform = GameObjectUtils.GetChildObject(counterPrefab, "Block/HoldPoint").transform;
