@@ -1,7 +1,7 @@
 <a id="top"></a>
 [← Back to README](README.md)
 
-# Feature Catalog [🔝](#top)
+# Feature Catalog
 
 ## Gameplay Systems [🔝](#top)
 - Murder loop that lets staff execute diners with the Meat Cleaver, spawn corpses, and splatter gore.
