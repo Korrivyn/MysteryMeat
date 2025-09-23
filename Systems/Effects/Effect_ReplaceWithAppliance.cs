@@ -12,7 +12,11 @@ namespace KitchenMysteryMeat.Systems.Effects
 {
     public static partial class CorpseEffects
     {
-        // Handles illegal appliance replacement while reporting detailed debug information.
+        /// <summary>
+        /// Replaces an illegal sight appliance with its configured overnight appliance while logging diagnostics.
+        /// </summary>
+        /// <param name="ctx">Entity context used to query and modify game state.</param>
+        /// <param name="entity">Entity flagged with illegal sight data to replace.</param>
         public static void ReplaceWithAppliance(EntityContext ctx, Entity entity)
         {
             // Guard: ensure the appliance is flagged as an illegal sight before transforming it.
