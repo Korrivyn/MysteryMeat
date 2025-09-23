@@ -14,6 +14,9 @@ using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems.Effects
 {
+    /// <summary>
+    /// Provides corpse effect helpers that transform illegal items into their rotten counterparts.
+    /// </summary>
     public static partial class CorpseEffects
     {
         // Holds cached corpse mapping IDs so lookups can be reused without repeated GDO queries.
@@ -22,7 +25,9 @@ namespace KitchenMysteryMeat.Systems.Effects
         // Stores the rotten corpse ID used as the transformation target when fresh corpse data is missing.
         private static readonly int RottenCustomerCorpseID = GDOUtils.GetCustomGameDataObject<RottenCustomerCorpse>().ID;
 
-        // Handles illegal corpse item transformation while respecting preservers and logging detailed diagnostics.
+        /// <summary>
+        /// Handles illegal corpse item transformation while respecting preservers and logging detailed diagnostics.
+        /// </summary>
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
             // Guard: ensure the entity is an illegal sight item before proceeding.
@@ -194,7 +199,9 @@ namespace KitchenMysteryMeat.Systems.Effects
             LogCorpseDebug($"[TransformCorpse] Destroyed original entity {entity.Index} after spawning rotten corpse {newCorpse.Index}.");
         }
 
-        // Attempts to resolve a rotten corpse ID for known fresh corpse blueprints.
+        /// <summary>
+        /// Attempts to resolve a rotten corpse ID for known fresh corpse blueprints.
+        /// </summary>
         private static bool TryResolveKnownCorpseMapping(int itemID, out int rottenID)
         {
             // Default the rotten ID before attempting to match against known corpse templates.
@@ -210,7 +217,9 @@ namespace KitchenMysteryMeat.Systems.Effects
             return false;
         }
 
-        // Emits debug output through the shared debug logging helper so verbosity remains configurable.
+        /// <summary>
+        /// Emits debug output through the shared debug logging helper so verbosity remains configurable.
+        /// </summary>
         private static void LogCorpseDebug(string message)
         {
             DebugLogSystem.LogVerbose(message);

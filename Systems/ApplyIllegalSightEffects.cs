@@ -14,9 +14,14 @@ using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems
 {
+    /// <summary>
+    /// Applies illegal sight effects at the start of each day so contraband items and appliances update to their rotten variants.
+    /// </summary>
     public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
     {
-        // Invoked at the start of each day to handle illegal item and appliance transitions.
+        /// <summary>
+        /// Iterates through flagged illegal sight entities and performs the configured transformations.
+        /// </summary>
         protected override void OnUpdate()
         {
             // Build query of illegal entities

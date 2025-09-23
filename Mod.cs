@@ -80,7 +80,8 @@ namespace KitchenMysteryMeat
         public const string DEBUG_LOG_LEVEL_ID = "debugLogLevel";
 
         /// <summary>
-        /// Gets the active debug logging level for the mod.
+        /// Gets the active debug logging level so players can control how much diagnostic output the mod produces.
+        /// Preference values map directly to the <see cref="DebugLogLevel"/> enum where 0 = Off, 1 = On, and 2 = Verbose.
         /// </summary>
         public static DebugLogLevel ActiveDebugLogLevel
         {
@@ -88,13 +89,27 @@ namespace KitchenMysteryMeat
             {
                 DebugLogLevel activeLevel = DebugLogLevel.Off;
 
-                // Ensures preference lookups only occur when the manager has been initialised.
-                if (PrefManager != null)
+                // Guard: skip preference lookups until the manager has been initialised by the mod bootstrap sequence.
+                PreferenceSystemManager manager = PrefManager;
+                if (manager != null)
                 {
-                    int storedLevel = PrefManager.Get<int>(DEBUG_LOG_LEVEL_ID);
+                    int storedLevel = (int)DebugLogLevel.Off;
+                    bool storedLevelRetrieved = false;
 
-                    // Validates the stored preference before casting it to the debug log level enum.
-                    if (Enum.IsDefined(typeof(DebugLogLevel), storedLevel))
+                    try
+                    {
+                        // Retrieve the stored preference so we can validate it against the debug log level enum values.
+                        storedLevel = manager.Get<int>(DEBUG_LOG_LEVEL_ID);
+                        storedLevelRetrieved = true;
+                    }
+                    catch (Exception)
+                    {
+                        // Guard: treat preference retrieval failures as absent data so the fallback level remains safe.
+                        storedLevelRetrieved = false;
+                    }
+
+                    // Guard: ensure the stored integer matches a defined debug log level before casting to the enum value.
+                    if (storedLevelRetrieved && Enum.IsDefined(typeof(DebugLogLevel), storedLevel))
                     {
                         activeLevel = (DebugLogLevel)storedLevel;
                     }
@@ -148,6 +163,7 @@ namespace KitchenMysteryMeat
             });
             int[] zeroToHundredPercentValues = intArrayGenerator.GetArray();
             string[] zeroToHundredPercentStrings = intArrayGenerator.GetStrings();
+            // Align integer preference values with the DebugLogLevel enum where 0-2 are reserved for Off/On/Verbose.
             int[] debugLogLevelValues = new[]
             {
                 (int)DebugLogLevel.Off,
