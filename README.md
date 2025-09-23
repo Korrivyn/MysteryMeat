@@ -34,4 +34,5 @@ Install the listed mods via the Steam Workshop, ensuring the directory names abo
 ## Documentation
 
 - [Feature Catalog](FEATURES.md)
+- [Roadmap](ROADMAP.md)
 - [QA Rubric](QA_RUBRIC.md)
