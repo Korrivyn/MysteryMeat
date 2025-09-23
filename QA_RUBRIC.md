@@ -1,8 +1,9 @@
+<a id="top"></a>
 [← Back to README](README.md)
 
-# Mystery Meat QA Rubric
+# Mystery Meat QA Rubric [🔝](#top)
 
-## 1. Mod Configuration and Preference Checks
+## 1. Mod Configuration and Preference Checks [🔝](#top)
 - **Test: Mystery Meat preference page exposes all controls.**
   - Steps:
     1. Open the in-run pause menu and navigate to the Mystery Meat preferences section.
@@ -35,7 +36,7 @@
     - No Mystery Meat debug chatter appears when set to Off.
     - Informational and verbose notes appear after elevating the preference.
 
-## 2. Murder Loop and Gore Generation
+## 2. Murder Loop and Gore Generation [🔝](#top)
 - **Test: Meat Cleaver kills diners in every seating state.**
   - Steps:
     1. Acquire the cleaver from its provider.
@@ -63,7 +64,7 @@
     - Orders tied to dead members disappear.
     - The group indicator despawns after all members are dead or have left.
 
-## 3. Suspicion, Alerts, and Loss Conditions
+## 3. Suspicion, Alerts, and Loss Conditions [🔝](#top)
 - **Test: Suspicion indicator attaches to every new diner.**
   - Steps:
     1. Start a day and watch arriving diners, including variants such as cats.
@@ -93,7 +94,7 @@
   - Expected Results:
     - The run loses a life immediately upon exit and the diner despawns.
 
-## 4. Illegal Sight Persistence and Overnight Behaviour
+## 4. Illegal Sight Persistence and Overnight Behaviour [🔝](#top)
 - **Test: Corpses rot without Persistent Corpses.**
   - Steps:
     1. Kill a diner, leave the corpse on the floor, end the day.
@@ -121,7 +122,7 @@
   - Expected Results:
     - The trash bag still contains the carcass next day, and the bag visuals reflect the filled state.
 
-## 5. Special Sauce Lifecycle
+## 5. Special Sauce Lifecycle [🔝](#top)
 - **Test: Empty bottles fill from fresh blood.**
   - Steps:
     1. Hold an empty special sauce bottle.
@@ -146,7 +147,7 @@
   - Expected Results:
     - The bottle converts to the empty version and can be refilled from blood puddles.
 
-## 6. Poisoning Flow
+## 6. Poisoning Flow [🔝](#top)
 - **Test: Manual poisoning contaminates held food.**
   - Steps:
     1. Hold a poison bottle and interact with a counter holding ready-to-serve food.
@@ -168,7 +169,7 @@
   - Expected Results:
     - The second attempt does not replay the sound or alter the item further.
 
-## 7. Meat Processing and Dish Coverage
+## 7. Meat Processing and Dish Coverage [🔝](#top)
 - **Test: Grindable items feed both grinders.**
   - Steps:
     1. Load Mystery Meat into the manual grinder and complete the process.
@@ -204,7 +205,7 @@
   - Expected Results:
     - Each main can accept the special sauce extra without breaking the order flow.
 
-## 8. Blood Spills and Mess Interactions
+## 8. Blood Spills and Mess Interactions [🔝](#top)
 - **Test: Blood puddle stages stack.**
   - Steps:
     1. Allow multiple spills to spawn in the same location without cleaning.
@@ -221,7 +222,7 @@
   - Expected Results:
     - The puddle disappears and no bottle is filled.
 
-## 9. Trash Bag Handling
+## 9. Trash Bag Handling [🔝](#top)
 - **Test: Bag stores a corpse and reveals stage art.**
   - Steps:
     1. Pick up a trash bag, interact with a corpse.
@@ -233,7 +234,7 @@
   - Expected Results:
     - The corpse returns to the player or surface with the same remaining portion count.
 
-## 10. Appliance and Provider Availability
+## 10. Appliance and Provider Availability [🔝](#top)
 - **Test: Providers respect unlock chains.**
   - Steps:
     1. Attempt to purchase the casings provider before owning the cleaver provider.
@@ -253,7 +254,7 @@
   - Expected Results:
     - The provider restocks after its cooldown, allowing further bottles to be drawn.
 
-## 11. Visual and Audio Feedback
+## 11. Visual and Audio Feedback [🔝](#top)
 - **Test: Suspicion indicator always faces the camera.**
   - Steps:
     1. Circle around a diner while the indicator is visible.
@@ -270,7 +271,7 @@
   - Expected Results:
     - Visible liquid segments disappear in sync with the remaining charges.
 
-## 12. Automation and Edge Cases
+## 12. Automation and Edge Cases [🔝](#top)
 - **Test: Automated poisoners respect reachability.**
   - Steps:
     1. Set up an automated poisoner facing a blocked tile.
@@ -287,7 +288,7 @@
   - Expected Results:
     - Each table consumes the correct number of charges without cross-contamination or resets.
 
-## 13. User Interface Assets
+## 13. User Interface Assets [🔝](#top)
 - **Test: Grind sprite appears in process prompts.**
   - Steps:
     1. View any prompt that references the grind process.
