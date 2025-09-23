@@ -22,7 +22,11 @@ namespace KitchenMysteryMeat.Systems.Effects
         // Stores the rotten corpse ID used as the transformation target when fresh corpse data is missing.
         private static readonly int RottenCustomerCorpseID = GDOUtils.GetCustomGameDataObject<RottenCustomerCorpse>().ID;
 
-        // Handles illegal corpse item transformation while respecting preservers and logging detailed diagnostics.
+        /// <summary>
+        /// Converts an illegal sight corpse entity into its configured rotten replacement while respecting preservers.
+        /// </summary>
+        /// <param name="ctx">Entity context used to query and modify game state.</param>
+        /// <param name="entity">Entity flagged as an illegal sight corpse to transform.</param>
         public static void TransformCorpse(EntityContext ctx, Entity entity)
         {
             // Guard: ensure the entity is an illegal sight item before proceeding.
@@ -194,7 +198,12 @@ namespace KitchenMysteryMeat.Systems.Effects
             LogCorpseDebug($"[TransformCorpse] Destroyed original entity {entity.Index} after spawning rotten corpse {newCorpse.Index}.");
         }
 
-        // Attempts to resolve a rotten corpse ID for known fresh corpse blueprints.
+        /// <summary>
+        /// Resolves a rotten corpse identifier for known fresh corpse blueprints when illegal sight data is missing.
+        /// </summary>
+        /// <param name="itemID">Identifier of the fresh corpse blueprint to evaluate.</param>
+        /// <param name="rottenID">Resolved rotten corpse identifier when a match is found.</param>
+        /// <returns>True when the fresh corpse blueprint is mapped to a rotten replacement; otherwise false.</returns>
         private static bool TryResolveKnownCorpseMapping(int itemID, out int rottenID)
         {
             // Default the rotten ID before attempting to match against known corpse templates.
@@ -210,7 +219,10 @@ namespace KitchenMysteryMeat.Systems.Effects
             return false;
         }
 
-        // Emits debug output through the shared debug logging helper so verbosity remains configurable.
+        /// <summary>
+        /// Emits detailed illegal sight corpse diagnostics through the shared debug logging helper.
+        /// </summary>
+        /// <param name="message">Message describing the corpse handling action.</param>
         private static void LogCorpseDebug(string message)
         {
             DebugLogSystem.LogVerbose(message);
