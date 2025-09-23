@@ -3,7 +3,7 @@
 
 # Mystery Meat QA Rubric
 
-## 1. Mod Configuration and Preference Checks
+## 1. Mod Configuration and Preference Checks [🔝](#top)
 - **Test: Mystery Meat preference page exposes all controls.**
   - Steps:
     1. Open the in-run pause menu and navigate to the Mystery Meat preferences section.
