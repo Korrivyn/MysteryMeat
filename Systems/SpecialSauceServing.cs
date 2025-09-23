@@ -62,7 +62,7 @@ namespace KitchenMysteryMeat.Systems
                     foreach (var tableGrabPoint in cTableSetGrabPoints)
                     {
                         // Cache the grab point entity to streamline repeated references within the loop.
-                        Entity grabPoint = tableGrabPoint.GrabPoint;
+                        Entity grabPoint = tableGrabPoint;
 
                         // Guard: ensure a holder exists so sauce can be dispensed from the grab point.
                         if (!Require<CItemHolder>(grabPoint, out var citemHolder))
