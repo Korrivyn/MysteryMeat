@@ -21,3 +21,8 @@ The project expects the following workshop items to exist under `$(PlateUpWorksh
 - `2949018507` – PreferenceSystem (`PreferenceSystem-Workshop.dll`)
 
 Install the listed mods via the Steam Workshop, ensuring the directory names above exist beneath your configured `PlateUpWorkshopDir`.
+
+## Documentation
+
+- [Feature Catalog](FEATURES.md)
+- [Mystery Meat QA Rubric](QA_RUBRIC.md)
