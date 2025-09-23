@@ -151,7 +151,7 @@ namespace KitchenMysteryMeat
             Bundle = mod.GetPacks<AssetBundleModPack>().SelectMany(e => e.AssetBundles).FirstOrDefault() ?? throw new MissingAssetBundleException(MOD_GUID);
             Logger = InitLogger();
 
-            // Initialise the debug helper immediately so all subsequent log calls share the same configuration.
+            // Wire the debug helper immediately because it must be ready before any gameplay systems attempt to log.
             DebugLogSystem.Initialise(Logger, () => ActiveDebugLogLevel);
 
             Bundle.LoadAllAssets<Texture2D>();
