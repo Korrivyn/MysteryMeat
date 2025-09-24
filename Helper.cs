@@ -1,5 +1,6 @@
 ﻿using Kitchen;
 using KitchenLib.Utils;
+using KitchenMysteryMeat.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,7 +19,29 @@ namespace KitchenMysteryMeat
         /// <returns>The prefab associated with the given name.</returns>
         public static GameObject GetPrefab(string name)
         {
-            return Mod.Bundle.LoadAsset<GameObject>(name);
+            // Guard: ensure the asset bundle is available before attempting to load assets from it.
+            if (Mod.Bundle == null)
+            {
+                DebugLogSystem.LogWarning("Mystery Meat attempted to load a prefab before the asset bundle was initialised.");
+                return null;
+            }
+
+            // Guard: avoid attempting to load assets when the requested name is blank.
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                DebugLogSystem.LogWarning("Mystery Meat attempted to load a prefab with an empty name from the asset bundle.");
+                return null;
+            }
+
+            GameObject prefab = Mod.Bundle.LoadAsset<GameObject>(name);
+
+            // Guard: report missing prefabs so configuration issues can be diagnosed quickly.
+            if (prefab == null)
+            {
+                DebugLogSystem.LogWarning($"Mystery Meat could not locate prefab '{name}' within the asset bundle.");
+            }
+
+            return prefab;
         }
 
         /// <summary>
