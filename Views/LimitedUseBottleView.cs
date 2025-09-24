@@ -95,7 +95,7 @@ namespace KitchenMysteryMeat.Views
                         Limit = limitedUseBottle.Limit,
                         FillAmount = limitedUseBottle.FillAmount
                     }, MessageType.SpecificViewUpdate);
-                    DebugLogSystem.LogVerbose($"Queued fill amount {limitedUseBottle.FillAmount}/{limitedUseBottle.Limit} for limited-use bottle view entity {view.Entity.Index}.");
+                    DebugLogSystem.LogVerbose($"Queued fill amount {limitedUseBottle.FillAmount}/{limitedUseBottle.Limit} for limited-use bottle view at query index {i}.");
                 }
             }
         }

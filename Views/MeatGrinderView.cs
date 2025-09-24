@@ -95,7 +95,7 @@ namespace KitchenMysteryMeat.Views
                         GrinderInputPosition = meatGrinder.GrinderInputPosition,
                         GrinderOutputPosition = meatGrinder.GrinderOutputPosition,
                     }, MessageType.SpecificViewUpdate);
-                    DebugLogSystem.LogVerbose($"Queued progress {applyingProcess.Progress:P0} for grinder entity {view.Entity.Index}.");
+                    DebugLogSystem.LogVerbose($"Queued progress {applyingProcess.Progress:P0} for grinder index {i}.");
                 }
             }
         }
