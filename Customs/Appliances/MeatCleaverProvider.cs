@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using KitchenLib.References;
 using KitchenMysteryMeat.Customs.Items;
+using KitchenMysteryMeat.Systems.Logging;
 
 namespace KitchenMysteryMeat.Customs.Appliances
 {
@@ -42,9 +43,13 @@ namespace KitchenMysteryMeat.Customs.Appliances
             KitchenPropertiesUtils.GetCItemProvider(GDOUtils.GetCustomGameDataObject<MeatCleaver>().ID, 1, 1, false, false, false, false, false, false, false)
         };
 
+        /// <summary>
+        /// Configures the thin counter to provide meat cleavers to players.
+        /// </summary>
         public override void OnRegister(Appliance gameDataObject)
         {
             Helper.SetupThinCounterLimitedItem(Prefab, Mod.Bundle.LoadAsset<GameObject>("Meat Cleaver").AssignMaterialsByNames().AssignVFXByNames(), false);
+            DebugLogSystem.LogVerbose("Initialised limited item setup during registration.");
         }
     }
 }

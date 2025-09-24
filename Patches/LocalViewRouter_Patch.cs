@@ -7,16 +7,19 @@ using UnityEngine;
 namespace KitchenMysteryMeat.Patches
 {
     [HarmonyPatch]
+    /// <summary>
+    /// Handles suspicion indicator injection by extending the local view router lifecycle.
+    /// </summary>
     static class LocalViewRouter_Patch
     {
-        [HarmonyPatch(typeof(LocalViewRouter), "GetPrefab")]
-        [HarmonyPostfix]
         /// <summary>
         /// Injects the suspicion indicator view onto customer prefabs once the base game provides them.
         /// </summary>
         /// <param name="__instance">The router invoking the hook.</param>
         /// <param name="view_type">The view type being requested.</param>
         /// <param name="__result">The prefab returned by the router.</param>
+        [HarmonyPatch(typeof(LocalViewRouter), "GetPrefab")]
+        [HarmonyPostfix]
         static void GetPrefab_Postfix(ref LocalViewRouter __instance, ViewType view_type, ref GameObject __result)
         {
             // Guard: ensure the asset bundle is available before attempting to instantiate custom indicators.
@@ -24,7 +27,7 @@ namespace KitchenMysteryMeat.Patches
             {
                 if (!_missingBundleWarningLogged)
                 {
-                    DebugLogSystem.LogVerbose("Mystery Meat skipped suspicion indicator injection because the asset bundle is unavailable.");
+                    DebugLogSystem.LogVerbose("Skipped suspicion indicator injection because the asset bundle is unavailable.");
                     _missingBundleWarningLogged = true;
                 }
 
@@ -39,7 +42,7 @@ namespace KitchenMysteryMeat.Patches
                 // Guard: abort when the indicator prefab is missing from the bundle to avoid null references.
                 if (indicatorPrefab == null)
                 {
-                    DebugLogSystem.LogWarning("Mystery Meat could not locate the SuspicionIndicator prefab while injecting customer views.");
+                    DebugLogSystem.LogWarning("Could not locate the SuspicionIndicator prefab while injecting customer views.");
                     return;
                 }
 
@@ -47,6 +50,7 @@ namespace KitchenMysteryMeat.Patches
                 SuspicionIndicatorView indicatorView = indicator.AddComponent<SuspicionIndicatorView>();
                 indicatorView.SuspicionClip = Mod.Bundle.LoadAsset<AudioClip>("suspicion.ogg");
                 indicator.transform.SetParent(__result.transform);
+                DebugLogSystem.LogVerbose($"Attached suspicion indicator view to customer prefab {__result.name}.");
             }
         }
 

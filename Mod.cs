@@ -141,7 +141,7 @@ namespace KitchenMysteryMeat
             // Guard: abort runtime registrations when the initialisation failed to acquire assets or preferences.
             if (!isReady)
             {
-                DebugLogSystem.LogError("Mystery Meat initialisation failed; runtime hooks and event subscriptions have been skipped to avoid null reference issues.");
+                DebugLogSystem.LogError("Initialisation failed; runtime hooks and event subscriptions have been skipped to avoid null reference issues.");
             }
             else
             {
@@ -336,7 +336,7 @@ namespace KitchenMysteryMeat
                 }
                 else
                 {
-                    DebugLogSystem.LogError("Mystery Meat could not locate its asset bundle during activation; audio registration will be skipped.");
+                DebugLogSystem.LogError("Could not locate the asset bundle during activation; audio registration will be skipped.");
                 }
             }
 
@@ -368,7 +368,7 @@ namespace KitchenMysteryMeat
             // Guard: ensure runtime dependencies remain available before applying game data modifications.
             if (!IsRuntimeReady())
             {
-                DebugLogSystem.LogWarning("BuildGameDataEvent triggered before Mystery Meat finished initialising; the handler execution has been skipped.");
+                DebugLogSystem.LogWarning("BuildGameDataEvent triggered before initialisation completed; the handler execution has been skipped.");
             }
             else
             {

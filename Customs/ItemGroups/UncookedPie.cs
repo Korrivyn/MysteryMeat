@@ -5,6 +5,7 @@ using KitchenLib.Customs;
 using KitchenLib.References;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Customs.Items;
+using KitchenMysteryMeat.Systems.Logging;
 using UnityEngine;
 
 namespace KitchenMysteryMeat.Customs.ItemGroups
@@ -48,15 +49,21 @@ namespace KitchenMysteryMeat.Customs.ItemGroups
             }
         };
 
-
+        /// <summary>
+        /// Configures the item group view to toggle components for the uncooked pie assembly.
+        /// </summary>
         public override void OnRegister(ItemGroup gameDataObject)
         {
             Prefab.GetComponent<UncookedPieItemGroupView>()?.Setup(Prefab);
+            DebugLogSystem.LogVerbose("Registered item group view setup for the uncooked pie.");
         }
     }
 
     public class UncookedPieItemGroupView : ItemGroupView
     {
+        /// <summary>
+        /// Configures component groups so the pie renders correct ingredients.
+        /// </summary>
         internal void Setup(GameObject prefab)
         {
             // This tells which sub-object of the prefab corresponds to each component of the ItemGroup
