@@ -1,8 +1,7 @@
 using System;
-using System.Diagnostics;
 using KitchenLib.Logging;
 using KitchenMysteryMeat.Enums;
-using UnityEngine;
+using UnityDebug = UnityEngine.Debug;
 
 namespace KitchenMysteryMeat.Systems.Logging
 {
@@ -56,7 +55,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             else if (activeLevel >= DebugLogLevel.On)
             {
                 // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                Debug.Log(FormatMessage(message, includeStackTrace));
+                UnityDebug.Log(FormatMessage(message, includeStackTrace));
             }
         }
 
@@ -80,7 +79,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             else if (activeLevel >= DebugLogLevel.On)
             {
                 // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                Debug.LogWarning(FormatMessage(message, includeStackTrace));
+                UnityDebug.LogWarning(FormatMessage(message, includeStackTrace));
             }
         }
 
@@ -104,7 +103,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             else
             {
                 // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                Debug.LogError(FormatMessage(message, includeStackTrace));
+                UnityDebug.LogError(FormatMessage(message, includeStackTrace));
             }
         }
 
@@ -132,7 +131,7 @@ namespace KitchenMysteryMeat.Systems.Logging
                 else
                 {
                     // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                    Debug.Log(formattedMessage);
+                    UnityDebug.Log(formattedMessage);
                 }
             }
         }
@@ -186,7 +185,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             if (includeStackTrace)
             {
                 // Generate a stack trace that skips the logging helper frames for clarity.
-                string stackTrace = new StackTrace(2, true).ToString();
+                string stackTrace = new System.Diagnostics.StackTrace(2, true).ToString();
 
                 // Append the stack trace only when the generated output contains meaningful content.
                 if (!string.IsNullOrWhiteSpace(stackTrace))

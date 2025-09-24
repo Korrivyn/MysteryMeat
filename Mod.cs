@@ -204,31 +204,37 @@ namespace KitchenMysteryMeat
             // Ensure core services exist so activation can proceed with a configured logger and preferences.
             bool coreReady = EnsureCoreInitialisation();
 
+            // Attempt to resolve the Mystery Meat asset bundle for runtime usage.
+            bool assetsReady = EnsureAssetBundle(mod);
+
+            // Evaluate runtime readiness once dependencies have been initialised.
+            bool runtimeReady = IsRuntimeReady();
+
             // Guard: abort runtime registrations when the initialisation failed to acquire assets or preferences.
-            if (!isReady)
+            if (!runtimeReady)
             {
                 DebugLogSystem.LogError("Mystery Meat initialisation failed; runtime hooks and event subscriptions have been skipped to avoid null reference issues.");
-            }
-            else
-            {
-                // Emit a startup info post through the debug helper so it respects the configured verbosity.
-                DebugLogSystem.LogInfo(MysteryMeatBanner);
 
-            // Attempt to register runtime hooks now that activation has supplied every dependency.
-            TryRegisterRuntimeHooks();
-
-            // Guard: surface readiness gaps so players understand why activation did not emit the banner immediately.
-            if (!IsRuntimeReady())
-            {
+                // Guard: surface readiness gaps so players understand why activation did not emit the banner immediately.
                 if (!coreReady)
                 {
                     DebugLogSystem.LogError("Mystery Meat activation completed without initialising its core systems; review earlier logs for details.");
                 }
 
+                // Guard: highlight when the activation context failed to expose the expected asset bundle.
                 if (!assetsReady && mod != null)
                 {
                     DebugLogSystem.LogError("Mystery Meat activation completed without resolving its asset bundle; review earlier logs for details.");
                 }
+            }
+            else
+            {
+                // Emit a startup info post through the debug helper so it respects the configured verbosity.
+                DebugLogSystem.LogInfo(MysteryMeatBanner);
+                _bannerLogged = true;
+
+                // Attempt to register runtime hooks now that activation has supplied every dependency.
+                TryRegisterRuntimeHooks();
             }
         }
 
