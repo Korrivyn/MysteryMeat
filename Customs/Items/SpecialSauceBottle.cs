@@ -43,7 +43,7 @@ namespace KitchenMysteryMeat.Customs.Items
             LimitedUseBottleView limitedUseBottleView = Prefab.AddComponent<LimitedUseBottleView>();
             limitedUseBottleView.BottleMaterial = MaterialUtils.GetExistingMaterial("Tomato Flesh 3");
             limitedUseBottleView.LiquidMaterial = MaterialUtils.GetExistingMaterial("Clothing Red");
-            DebugLogSystem.LogVerbose("SpecialSauceBottle attached LimitedUseBottleView during registration.");
+            DebugLogSystem.LogVerbose("Attached LimitedUseBottleView during registration.");
         }
     }
 }

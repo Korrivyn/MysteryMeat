@@ -49,7 +49,7 @@ namespace KitchenMysteryMeat.Customs.Appliances
         public override void OnRegister(Appliance gameDataObject)
         {
             Helper.SetupThinCounterLimitedItem(Prefab, Mod.Bundle.LoadAsset<GameObject>("Meat Cleaver").AssignMaterialsByNames().AssignVFXByNames(), false);
-            DebugLogSystem.LogVerbose("MeatCleaverProvider initialised limited item setup during registration.");
+            DebugLogSystem.LogVerbose("Initialised limited item setup during registration.");
         }
     }
 }

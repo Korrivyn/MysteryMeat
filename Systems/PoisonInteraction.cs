@@ -31,12 +31,12 @@ namespace KitchenMysteryMeat.Systems
             {
                 if (!hasPlayerHolder)
                 {
-                    DebugLogSystem.LogWarning("[PoisonInteraction:IsPossible] Player holder missing while evaluating poison swap.");
+                    DebugLogSystem.LogWarning("Player holder missing while evaluating poison swap.");
                 }
 
                 if (!hasApplianceHolder)
                 {
-                    DebugLogSystem.LogWarning("[PoisonInteraction:IsPossible] Appliance holder missing while evaluating poison swap.");
+                    DebugLogSystem.LogWarning("Appliance holder missing while evaluating poison swap.");
                 }
             }
 
@@ -48,18 +48,18 @@ namespace KitchenMysteryMeat.Systems
             bool isPossible = false;
 
             // Evaluate whether the player can poison the appliance-held item via their bottle.
-            DebugLogSystem.LogVerbose("[PoisonInteraction:IsPossible] Checking player-supplied poison path.");
+            DebugLogSystem.LogVerbose("Checking player-supplied poison path.");
             if (playerProvidesPoison && applianceHasEligibleItem)
             {
-                DebugLogSystem.LogVerbose("[PoisonInteraction:IsPossible] Player bottle can contaminate the appliance-held item.");
+                DebugLogSystem.LogVerbose("Player bottle can contaminate the appliance-held item.");
                 isPossible = true;
             }
 
             // Evaluate whether the appliance can poison the player-held item via its bottle.
-            DebugLogSystem.LogVerbose("[PoisonInteraction:IsPossible] Checking appliance-supplied poison path.");
+            DebugLogSystem.LogVerbose("Checking appliance-supplied poison path.");
             if (!isPossible && applianceProvidesPoison && playerHasEligibleItem)
             {
-                DebugLogSystem.LogVerbose("[PoisonInteraction:IsPossible] Appliance bottle can contaminate the player-held item.");
+                DebugLogSystem.LogVerbose("Appliance bottle can contaminate the player-held item.");
                 isPossible = true;
             }
 
@@ -83,12 +83,12 @@ namespace KitchenMysteryMeat.Systems
             {
                 if (!hasPlayerHolder)
                 {
-                    DebugLogSystem.LogWarning("[PoisonInteraction:Perform] Player holder missing while attempting poison swap.");
+                    DebugLogSystem.LogWarning("Player holder missing while attempting poison swap.");
                 }
 
                 if (!hasApplianceHolder)
                 {
-                    DebugLogSystem.LogWarning("[PoisonInteraction:Perform] Appliance holder missing while attempting poison swap.");
+                    DebugLogSystem.LogWarning("Appliance holder missing while attempting poison swap.");
                 }
 
                 return;
@@ -102,22 +102,22 @@ namespace KitchenMysteryMeat.Systems
             bool poisonApplied = false;
 
             // Apply poison when the player donates a bottle to contaminate the appliance-held item.
-            DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Evaluating player-supplied poison application.");
+            DebugLogSystem.LogVerbose("Evaluating player-supplied poison application.");
             if (playerProvidesPoison && applianceHasEligibleItem)
             {
                 EntityManager.AddComponent<CPoisoned>(applianceHeldItem.HeldItem);
-                DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Player bottle poisoned the appliance-held item.");
-                DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Poison status applied to the appliance-held item.");
+                DebugLogSystem.LogVerbose("Player bottle poisoned the appliance-held item.");
+                DebugLogSystem.LogVerbose("Poison status applied to the appliance-held item.");
                 poisonApplied = true;
             }
 
             // Apply poison when the appliance donates a bottle to contaminate the player-held item.
-            DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Evaluating appliance-supplied poison application.");
+            DebugLogSystem.LogVerbose("Evaluating appliance-supplied poison application.");
             if (!poisonApplied && applianceProvidesPoison && playerHasEligibleItem)
             {
                 EntityManager.AddComponent<CPoisoned>(playerHeldItem.HeldItem);
-                DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Appliance bottle poisoned the player-held item.");
-                DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Poison status applied to the player-held item.");
+                DebugLogSystem.LogVerbose("Appliance bottle poisoned the player-held item.");
+                DebugLogSystem.LogVerbose("Poison status applied to the player-held item.");
                 poisonApplied = true;
             }
 

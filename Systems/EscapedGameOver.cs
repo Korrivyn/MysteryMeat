@@ -34,7 +34,7 @@ namespace KitchenMysteryMeat.Systems
             // Guard: notify when the destination component could not be located for diagnostic purposes.
             if (!ReachedDestinationComponentType.HasValue)
             {
-                DebugLogSystem.LogWarning("EscapedGameOver could not resolve CReachedDestination; falling back to distance checks.");
+                DebugLogSystem.LogWarning("Could not resolve CReachedDestination; falling back to distance checks.");
             }
         }
 
@@ -72,7 +72,7 @@ namespace KitchenMysteryMeat.Systems
                     // End game if exited
                     EntityManager.CreateEntity(typeof(CLoseLifeEvent));
                     EntityManager.DestroyEntity(customer);
-                    DebugLogSystem.LogWarning($"EscapedGameOver triggered game over because alerted customer {customer.Index} exited the restaurant.");
+                    DebugLogSystem.LogWarning($"Triggered game over because alerted customer {customer.Index} exited the restaurant.");
                     break;
                 }
             }
@@ -89,7 +89,7 @@ namespace KitchenMysteryMeat.Systems
 
             if (type == null)
             {
-                DebugLogSystem.LogWarning("EscapedGameOver could not locate Kitchen.CReachedDestination in any known assembly.");
+                DebugLogSystem.LogWarning("Could not locate Kitchen.CReachedDestination in any known assembly.");
                 return null;
             }
 

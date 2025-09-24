@@ -96,7 +96,7 @@ namespace KitchenMysteryMeat.Customs.Appliances
 
 
             MeatGrinderView meatGrinderView = gameDataObject.Prefab.AddComponent<MeatGrinderView>();
-            DebugLogSystem.LogVerbose("AutomaticMeatGrinder configured automated components during registration.");
+            DebugLogSystem.LogVerbose("Configured automated components during registration.");
         }
     }
 }

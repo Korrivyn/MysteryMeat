@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace KitchenMysteryMeat.MonoBehaviours
 {
+    /// <summary>
+    /// Applies preference-driven volume multipliers to attached sound sources at runtime.
+    /// </summary>
     public class PreferenceVolumeAdjuster : MonoBehaviour
     {
         public string PreferenceID = string.Empty;
@@ -24,7 +27,7 @@ namespace KitchenMysteryMeat.MonoBehaviours
                     {
                         if (!_missingPreferenceManagerLogged)
                         {
-                            DebugLogSystem.LogVerbose("Mystery Meat deferred volume adjustment because preferences are not yet initialised.");
+                            DebugLogSystem.LogVerbose("Deferred volume adjustment because preferences are not yet initialised.");
                             _missingPreferenceManagerLogged = true;
                         }
 

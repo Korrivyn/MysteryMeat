@@ -41,7 +41,7 @@ namespace KitchenMysteryMeat.Views
             // Guard: ensure required transforms are available before applying updates.
             if (TrashBag == null || CorpsesParent == null)
             {
-                DebugLogSystem.LogWarning("TrashBagView attempted to update without configured transforms.");
+                DebugLogSystem.LogWarning("Trash bag view attempted to update without configured transforms.");
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace KitchenMysteryMeat.Views
                             TotalPortions = cSplittableItem.TotalCount,
                             RemainingPortions = cSplittableItem.RemainingCount,
                         }, MessageType.SpecificViewUpdate);
-                        DebugLogSystem.LogVerbose($"TrashBagView.UpdateView pushed corpse counts {cSplittableItem.RemainingCount}/{cSplittableItem.TotalCount} for entity {entities[i].Index}.");
+                        DebugLogSystem.LogVerbose($"Pushed corpse counts {cSplittableItem.RemainingCount}/{cSplittableItem.TotalCount} for trash bag entity {entities[i].Index}.");
                     }
                     else
                     {
@@ -105,7 +105,7 @@ namespace KitchenMysteryMeat.Views
                         }, MessageType.SpecificViewUpdate);
                         if (itemStored.Length == 0)
                         {
-                            DebugLogSystem.LogVerbose($"TrashBagView.UpdateView cleared corpse visuals because trash bag {entities[i].Index} has no stored items.");
+                            DebugLogSystem.LogVerbose($"Cleared corpse visuals because trash bag {entities[i].Index} has no stored items.");
                         }
                     }
                 }

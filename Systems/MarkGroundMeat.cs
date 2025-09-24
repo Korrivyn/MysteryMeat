@@ -48,18 +48,18 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: only react when the completed process matches the grinder's configured process.
                 if (cCompletedProcess.Process == cMeatGrinder.GrindProcess)
                 {
-                    DebugLogSystem.LogVerbose($"MarkGroundMeat evaluating grinder {appliance.Index} for held item cleanup.");
+                    DebugLogSystem.LogVerbose($"Evaluating grinder {appliance.Index} for held item cleanup.");
 
                     // Guard: remove the grindable marker when the held item no longer requires grinding.
                     if (Has<CGrindable>(cItemHolder.HeldItem))
                     {
                         EntityManager.RemoveComponent<CGrindable>(cItemHolder.HeldItem);
-                        DebugLogSystem.LogVerbose($"MarkGroundMeat cleared CGrindable from item {cItemHolder.HeldItem.Index} after grinding.");
+                        DebugLogSystem.LogVerbose($"Cleared CGrindable from item {cItemHolder.HeldItem.Index} after grinding.");
                     }
                 }
                 else
                 {
-                    DebugLogSystem.LogVerbose($"MarkGroundMeat skipped appliance {appliance.Index} because process {cCompletedProcess.Process} does not match grinder configuration {cMeatGrinder.GrindProcess}.");
+                    DebugLogSystem.LogVerbose($"Skipped appliance {appliance.Index} because process {cCompletedProcess.Process} does not match grinder configuration {cMeatGrinder.GrindProcess}.");
                 }
             }
         }

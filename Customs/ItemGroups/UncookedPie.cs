@@ -55,7 +55,7 @@ namespace KitchenMysteryMeat.Customs.ItemGroups
         public override void OnRegister(ItemGroup gameDataObject)
         {
             Prefab.GetComponent<UncookedPieItemGroupView>()?.Setup(Prefab);
-            DebugLogSystem.LogVerbose("UncookedPie registered its item group view setup.");
+            DebugLogSystem.LogVerbose("Registered item group view setup for the uncooked pie.");
         }
     }
 

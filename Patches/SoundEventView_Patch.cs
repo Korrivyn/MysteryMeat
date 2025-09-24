@@ -20,23 +20,23 @@ namespace KitchenMysteryMeat.Patches
     [HarmonyPatch]
     static class SoundEventView_Patch
     {
-        [HarmonyPatch(typeof(SoundEventView), "UpdateData")]
-        [HarmonyPrefix]
         /// <summary>
         /// Ensures Mystery Meat audio events respect player-configured volume preferences.
         /// </summary>
+        [HarmonyPatch(typeof(SoundEventView), "UpdateData")]
+        [HarmonyPrefix]
         static bool UpdateData_Prefix(ref SoundEventView __instance, SoundEventView.ViewData data)
         {
             if (data.Event == Mod.AlertSoundEvent)
             {
                 __instance.gameObject.AddComponent<PreferenceVolumeAdjuster>().PreferenceID = Mod.ALERT_VOLUME_ID;
-                DebugLogSystem.LogVerbose("SoundEventView_Patch applied alert volume preference adjuster.");
+                DebugLogSystem.LogVerbose("Applied alert volume preference adjuster.");
 
             }
             else if (data.Event == Mod.StabSoundEvent)
             {
                 __instance.gameObject.AddComponent<PreferenceVolumeAdjuster>().PreferenceID = Mod.STAB_VOLUME_ID;
-                DebugLogSystem.LogVerbose("SoundEventView_Patch applied stab volume preference adjuster.");
+                DebugLogSystem.LogVerbose("Applied stab volume preference adjuster.");
             }
             return true;
         }

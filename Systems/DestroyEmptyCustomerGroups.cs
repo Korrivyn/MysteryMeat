@@ -60,7 +60,7 @@ namespace KitchenMysteryMeat.Systems
                         // Guard: skip destruction when alerted customers are still leaving the restaurant.
                         if (hasAlertedMembersInFlight)
                         {
-                            DebugLogSystem.LogVerbose($"DestroyEmptyCustomerGroups deferred destruction for group {customerGroup.Index} because alerted diners remain in flight.");
+                            DebugLogSystem.LogVerbose($"Deferred destruction for group {customerGroup.Index} because alerted diners remain in flight.");
                             continue;
                         }
 
@@ -68,16 +68,16 @@ namespace KitchenMysteryMeat.Systems
                         if (Require<CHasIndicator>(customerGroup, out CHasIndicator cHasIndicator))
                         {
                             EntityManager.DestroyEntity(cHasIndicator.Indicator);
-                            DebugLogSystem.LogVerbose($"DestroyEmptyCustomerGroups removed indicator {cHasIndicator.Indicator.Index} prior to destroying group {customerGroup.Index}.");
+                            DebugLogSystem.LogVerbose($"Removed indicator {cHasIndicator.Indicator.Index} prior to destroying group {customerGroup.Index}.");
                         }
 
                         EntityManager.DestroyEntity(customerGroup);
-                        DebugLogSystem.LogVerbose($"DestroyEmptyCustomerGroups destroyed empty group {customerGroup.Index}.");
+                        DebugLogSystem.LogVerbose($"Destroyed empty group {customerGroup.Index}.");
                     }
                 }
                 else
                 {
-                    DebugLogSystem.LogWarning($"DestroyEmptyCustomerGroups could not access CGroupMember buffer for group {customerGroup.Index}; destruction skipped.");
+                    DebugLogSystem.LogWarning($"Could not access CGroupMember buffer for group {customerGroup.Index}; destruction skipped.");
                 }
             }
         }

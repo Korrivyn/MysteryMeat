@@ -98,7 +98,7 @@ namespace KitchenMysteryMeat.Customs.Appliances
 
 
             MeatGrinderView meatGrinderView = gameDataObject.Prefab.AddComponent<MeatGrinderView>();
-            DebugLogSystem.LogVerbose("ManualMeatGrinder configured hold point, audio, and view components during registration.");
+            DebugLogSystem.LogVerbose("Configured hold point, audio, and view components during registration.");
         }
     }
 }

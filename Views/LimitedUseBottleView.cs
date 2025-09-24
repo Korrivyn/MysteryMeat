@@ -38,13 +38,13 @@ namespace KitchenMysteryMeat.Views
         {
             if (!Mesh || !BottleMaterial || !LiquidMaterial)
             {
-                DebugLogSystem.LogWarning("LimitedUseBottleView is missing mesh or material references and cannot update visuals.");
+                DebugLogSystem.LogWarning("Limited-use bottle view is missing mesh or material references and cannot update visuals.");
                 return;
             }
 
             if (data.Equals(default(ViewData)))
             {
-                DebugLogSystem.LogVerbose("LimitedUseBottleView received default view data; skipping update.");
+                DebugLogSystem.LogVerbose("Received default view data; skipping limited-use bottle update.");
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace KitchenMysteryMeat.Views
                         Limit = limitedUseBottle.Limit,
                         FillAmount = limitedUseBottle.FillAmount
                     }, MessageType.SpecificViewUpdate);
-                    DebugLogSystem.LogVerbose($"LimitedUseBottleView.UpdateView queued fill amount {limitedUseBottle.FillAmount}/{limitedUseBottle.Limit} for view entity {view.Entity.Index}.");
+                    DebugLogSystem.LogVerbose($"Queued fill amount {limitedUseBottle.FillAmount}/{limitedUseBottle.Limit} for limited-use bottle view entity {view.Entity.Index}.");
                 }
             }
         }

@@ -45,7 +45,7 @@ namespace KitchenMysteryMeat.Systems
                     Capacity = 1
                 });
                 EntityManager.AddBuffer<CItemStored>(trashBag);
-                DebugLogSystem.LogVerbose($"AttachTrashBagComponents provisioned storage for trash bag {trashBag.Index}.");
+                DebugLogSystem.LogVerbose($"Provisioned storage for trash bag {trashBag.Index}.");
             }
         }
     }

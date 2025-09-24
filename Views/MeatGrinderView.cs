@@ -40,7 +40,7 @@ namespace KitchenMysteryMeat.Views
         {
             if (HoldPoint == null)
             {
-                DebugLogSystem.LogWarning("MeatGrinderView missing hold point transform; skipping update.");
+                DebugLogSystem.LogWarning("Meat grinder view missing hold point transform; skipping update.");
                 return;
             }
 
@@ -95,7 +95,7 @@ namespace KitchenMysteryMeat.Views
                         GrinderInputPosition = meatGrinder.GrinderInputPosition,
                         GrinderOutputPosition = meatGrinder.GrinderOutputPosition,
                     }, MessageType.SpecificViewUpdate);
-                    DebugLogSystem.LogVerbose($"MeatGrinderView.UpdateView queued progress {applyingProcess.Progress:P0} for grinder entity {view.Entity.Index}.");
+                    DebugLogSystem.LogVerbose($"Queued progress {applyingProcess.Progress:P0} for grinder entity {view.Entity.Index}.");
                 }
             }
         }

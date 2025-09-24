@@ -44,7 +44,7 @@ namespace KitchenMysteryMeat.Customs.Items
             base.OnRegister(gameDataObject);
 
             TrashBagView view = Prefab.AddComponent<TrashBagView>();
-            DebugLogSystem.LogVerbose("TrashBag attached its view component during registration.");
+            DebugLogSystem.LogVerbose("Attached trash bag view component during registration.");
         }
     }
 }

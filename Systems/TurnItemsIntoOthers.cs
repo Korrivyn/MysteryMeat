@@ -47,7 +47,7 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: skip when the transformation target has not been configured.
                 if (cTurnIntoItem.NewID == 0)
                 {
-                    DebugLogSystem.LogWarning($"TurnItemsIntoOthers found item {item.Index} with an unset NewID; transformation skipped.");
+                    DebugLogSystem.LogWarning($"Found item {item.Index} with an unset NewID; transformation skipped.");
                     continue;
                 }
                 EntityManager.AddComponentData<CChangeItemType>(item, new CChangeItemType()
@@ -55,7 +55,7 @@ namespace KitchenMysteryMeat.Systems
                     NewID = cTurnIntoItem.NewID,
                 });
                 EntityManager.RemoveComponent<CTurnIntoItem>(item);
-                DebugLogSystem.LogVerbose($"TurnItemsIntoOthers changed item {item.Index} to new item ID {cTurnIntoItem.NewID}.");
+                DebugLogSystem.LogVerbose($"Changed item {item.Index} to new item ID {cTurnIntoItem.NewID}.");
             }
         }
     }

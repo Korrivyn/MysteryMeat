@@ -71,7 +71,7 @@ namespace KitchenMysteryMeat.Customs.Items
             {
                 var view = Prefab.AddComponent<CustomerCorpseItemView>();
                 view.Setup(Prefab);
-                DebugLogSystem.LogVerbose("CustomerCorpse attached CustomerCorpseItemView during registration.");
+                DebugLogSystem.LogVerbose("Attached CustomerCorpseItemView during registration.");
             }
         }
     }

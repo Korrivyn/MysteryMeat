@@ -32,7 +32,7 @@ namespace KitchenMysteryMeat.Systems
             // Guard: emit diagnostics when the interaction cannot proceed.
             if (!canKill)
             {
-                DebugLogSystem.LogVerbose("KillInteraction deemed interaction impossible due to missing components or existing CKilled state.");
+                DebugLogSystem.LogVerbose("Kill interaction deemed impossible due to missing components or existing CKilled state.");
             }
 
             return canKill;
@@ -45,7 +45,7 @@ namespace KitchenMysteryMeat.Systems
         {
             CSoundEvent.Create(EntityManager, Mod.StabSoundEvent);
             EntityManager.AddComponentData<CKilled>(data.Target, new CKilled() { Bloody = true });
-            DebugLogSystem.LogVerbose($"KillInteraction marked customer {data.Target.Index} as killed via interaction.");
+            DebugLogSystem.LogVerbose($"Marked customer {data.Target.Index} as killed via interaction.");
         }
     }
 }

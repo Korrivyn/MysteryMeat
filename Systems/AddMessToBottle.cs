@@ -51,14 +51,14 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: skip appliances that have not completed their work duration.
                 if (!duration.Active || duration.Remaining > 0f)
                 {
-                    DebugLogSystem.LogVerbose($"AddMessToBottle skipping appliance {appliance.Index} because the fill process is still running.");
+                    DebugLogSystem.LogVerbose($"Skipping appliance {appliance.Index} because the fill process is still running.");
                     continue;
                 }
 
                 // Guard: skip when no actors are currently interacting with the appliance.
                 if (actors.IsEmpty)
                 {
-                    DebugLogSystem.LogVerbose($"AddMessToBottle found no interacting actors for appliance {appliance.Index}.");
+                    DebugLogSystem.LogVerbose($"Found no interacting actors for appliance {appliance.Index}.");
                     continue;
                 }
 
@@ -78,7 +78,7 @@ namespace KitchenMysteryMeat.Systems
                                 NewID = emptyBottle.FullBottleID,
                             });
                             EntityManager.RemoveComponent<CEmptyBottle>(itemHolder.HeldItem);
-                            DebugLogSystem.LogVerbose($"AddMessToBottle converted empty bottle entity {itemHolder.HeldItem.Index} to full bottle ID {emptyBottle.FullBottleID}.");
+                            DebugLogSystem.LogVerbose($"Converted empty bottle entity {itemHolder.HeldItem.Index} to full bottle ID {emptyBottle.FullBottleID}.");
                             continue;
                         }
 
@@ -92,18 +92,18 @@ namespace KitchenMysteryMeat.Systems
                                 EntityManager.SetComponentData(itemHolder.HeldItem, bottle);
                             }
 
-                            DebugLogSystem.LogVerbose($"AddMessToBottle refilled limited-use bottle entity {itemHolder.HeldItem.Index} to limit {bottle.Limit}.");
+                            DebugLogSystem.LogVerbose($"Refilled limited-use bottle entity {itemHolder.HeldItem.Index} to limit {bottle.Limit}.");
                         }
                     }
                     else
                     {
                         int actorIndex = actors[i].Interactor != Entity.Null ? actors[i].Interactor.Index : -1;
-                        DebugLogSystem.LogWarning($"AddMessToBottle encountered actor {actorIndex} without a CItemHolder while refilling bottles on appliance {appliance.Index}.");
+                        DebugLogSystem.LogWarning($"Encountered actor {actorIndex} without a CItemHolder while refilling bottles on appliance {appliance.Index}.");
                     }
                 }
 
                 EntityManager.RemoveComponent<CFillsBottle>(appliance);
-                DebugLogSystem.LogVerbose($"AddMessToBottle cleared CFillsBottle from appliance {appliance.Index} after refilling bottles.");
+                DebugLogSystem.LogVerbose($"Cleared CFillsBottle from appliance {appliance.Index} after refilling bottles.");
             }
         }
     }

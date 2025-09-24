@@ -60,7 +60,7 @@ namespace KitchenMysteryMeat.Systems
                     {
                         if (Require<CHeldBy>(illegalEntity, out CHeldBy cHeldBy) && !Require<CPosition>(cHeldBy.Holder, out illegalEntityPos))
                         {
-                            DebugLogSystem.LogWarning($"ISeeDeadPeople could not resolve position for held illegal entity {illegalEntity.Index}.");
+                            DebugLogSystem.LogWarning($"Could not resolve position for held illegal entity {illegalEntity.Index}.");
                             continue;
                         }
                     }
@@ -78,7 +78,7 @@ namespace KitchenMysteryMeat.Systems
                             // Run away!
                             cSuspicionIndicator.SeenIllegalThing = illegalEntity;
                             EntityManager.SetComponentData<CSuspicionIndicator>(customer, cSuspicionIndicator);
-                            DebugLogSystem.LogVerbose($"ISeeDeadPeople flagged customer {customer.Index} after spotting illegal entity {illegalEntity.Index}.");
+                            DebugLogSystem.LogVerbose($"Flagged customer {customer.Index} after spotting illegal entity {illegalEntity.Index}.");
                             continue;
                         }
                     }
@@ -87,7 +87,7 @@ namespace KitchenMysteryMeat.Systems
                     {
                         cSuspicionIndicator.SeenIllegalThing = null;
                         EntityManager.SetComponentData<CSuspicionIndicator>(customer, cSuspicionIndicator);
-                        DebugLogSystem.LogVerbose($"ISeeDeadPeople cleared illegal sight reference for customer {customer.Index}.");
+                        DebugLogSystem.LogVerbose($"Cleared illegal sight reference for customer {customer.Index}.");
                     }
 
                 }

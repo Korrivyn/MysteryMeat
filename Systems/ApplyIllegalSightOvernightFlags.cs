@@ -50,7 +50,7 @@ namespace KitchenMysteryMeat.Systems
             // Guard: log when no illegal entities were discovered during the overnight evaluation.
             if (illegals.Length == 0)
             {
-                DebugLogSystem.LogVerbose("ApplyIllegalSightOvernightFlags found no illegal entities to process during overnight cleanup.");
+                DebugLogSystem.LogVerbose("Found no illegal entities to process during overnight cleanup.");
             }
 
             for (int i = 0; i < illegals.Length; ++i)
@@ -82,11 +82,11 @@ namespace KitchenMysteryMeat.Systems
             }
 
             // Guard: only proceed when the item is currently held by another entity.
-            if (!EntityManager.HasComponent<CHeldBy>(item))
-            {
-                DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags skipped illegal item {item.Index} because it is not held by an appliance.");
-                return;
-            }
+                if (!EntityManager.HasComponent<CHeldBy>(item))
+                {
+                    DebugLogSystem.LogVerbose($"Skipped illegal item {item.Index} because it is not held by an appliance.");
+                    return;
+                }
 
             CHeldBy heldBy = EntityManager.GetComponentData<CHeldBy>(item);
             Entity holder = heldBy.Holder;
@@ -94,7 +94,7 @@ namespace KitchenMysteryMeat.Systems
             // Guard: verify the holder is a valid appliance before adding overnight preservation.
             if (holder == Entity.Null || !EntityManager.HasComponent<CAppliance>(holder))
             {
-                DebugLogSystem.LogWarning($"ApplyIllegalSightOvernightFlags detected illegal item {item.Index} held by an invalid entity {holder.Index}; preservation skipped.");
+                DebugLogSystem.LogWarning($"Detected illegal item {item.Index} held by invalid entity {holder.Index}; preservation skipped.");
                 return;
             }
 
@@ -104,7 +104,7 @@ namespace KitchenMysteryMeat.Systems
             if (!hadPreserver)
             {
                 EntityManager.AddComponentData(holder, new CPreservesContentsOvernight());
-                DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags added overnight preservation to holder {holder.Index}.");
+                DebugLogSystem.LogVerbose($"Added overnight preservation to holder {holder.Index}.");
             }
 
             if (EntityManager.HasComponent<CIllegalSightHolderPreserved>(holder))
@@ -116,7 +116,7 @@ namespace KitchenMysteryMeat.Systems
                     {
                         marker.AddedPreserver = true;
                         EntityManager.SetComponentData(holder, marker);
-                        DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags updated holder preservation marker for entity {holder.Index} to reflect added preserver.");
+                        DebugLogSystem.LogVerbose($"Updated holder preservation marker for entity {holder.Index} to reflect added preserver.");
                     }
                 }
             }
@@ -126,7 +126,7 @@ namespace KitchenMysteryMeat.Systems
                 {
                     AddedPreserver = !hadPreserver
                 });
-                DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags created preservation marker for holder {holder.Index}.");
+                DebugLogSystem.LogVerbose($"Created preservation marker for holder {holder.Index}.");
             }
         }
 
@@ -148,7 +148,7 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: retain the preserver when persistence is active and the holder still contains illegal items.
                 if (persistent && holdersWithIllegalItems != null && holdersWithIllegalItems.Contains(holder))
                 {
-                    DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags retained overnight preservation for holder {holder.Index} due to persistent corpses.");
+                    DebugLogSystem.LogVerbose($"Retained overnight preservation for holder {holder.Index} because persistent corpses are enabled.");
                     continue;
                 }
 
@@ -157,11 +157,11 @@ namespace KitchenMysteryMeat.Systems
                 if (marker.AddedPreserver && EntityManager.HasComponent<CPreservesContentsOvernight>(holder))
                 {
                     EntityManager.RemoveComponent<CPreservesContentsOvernight>(holder);
-                    DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags removed overnight preserver from holder {holder.Index}.");
+                    DebugLogSystem.LogVerbose($"Removed overnight preserver from holder {holder.Index}.");
                 }
 
                 EntityManager.RemoveComponent<CIllegalSightHolderPreserved>(holder);
-                DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags cleared preservation marker from holder {holder.Index}.");
+                DebugLogSystem.LogVerbose($"Cleared preservation marker from holder {holder.Index}.");
             }
         }
 
@@ -187,7 +187,7 @@ namespace KitchenMysteryMeat.Systems
                     if (hasDestroyMarker)
                     {
                         EntityManager.RemoveComponent<CDestroyApplianceAtNight>(entity);
-                        DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags removed nighttime destruction from appliance {entity.Index} because it transforms on day start.");
+                        DebugLogSystem.LogVerbose($"Removed nighttime destruction from appliance {entity.Index} because it transforms on day start.");
                     }
                 }
 
@@ -197,7 +197,7 @@ namespace KitchenMysteryMeat.Systems
             if (!hasDestroyMarker)
             {
                 EntityManager.AddComponentData(entity, new CDestroyApplianceAtNight());
-                DebugLogSystem.LogVerbose($"ApplyIllegalSightOvernightFlags marked appliance {entity.Index} for destruction at night.");
+                DebugLogSystem.LogVerbose($"Marked appliance {entity.Index} for destruction at night.");
             }
         }
     }

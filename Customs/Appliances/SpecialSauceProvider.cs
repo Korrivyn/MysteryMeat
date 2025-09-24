@@ -62,7 +62,7 @@ namespace KitchenMysteryMeat.Customs.Appliances
         public override void OnRegister(Appliance gameDataObject)
         {
             Helper.SetupCounterLimitedItem(Prefab, Mod.Bundle.LoadAsset<GameObject>("Empty Special Sauce Bottle").AssignMaterialsByNames().AssignVFXByNames());
-            DebugLogSystem.LogVerbose("SpecialSauceProvider initialised limited item setup during registration.");
+            DebugLogSystem.LogVerbose("Initialised limited item setup during registration.");
         }
     }
 }

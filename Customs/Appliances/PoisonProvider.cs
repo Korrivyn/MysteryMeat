@@ -51,7 +51,7 @@ namespace KitchenMysteryMeat.Customs.Appliances
         public override void OnRegister(Appliance gameDataObject)
         {
             Helper.SetupCounterLimitedItem(Prefab, Mod.Bundle.LoadAsset<GameObject>("Poison Bottle").AssignMaterialsByNames().AssignVFXByNames());
-            DebugLogSystem.LogVerbose("PoisonProvider initialised limited item setup during registration.");
+            DebugLogSystem.LogVerbose("Initialised limited item setup during registration.");
         }
     }
 }

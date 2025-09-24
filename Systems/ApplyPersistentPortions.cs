@@ -53,7 +53,7 @@ namespace KitchenMysteryMeat.Systems
                 Set<CSplittableItem>(splittableItem, cSplittableItem);
 
                 EntityManager.RemoveComponent<CPersistPortions>(splittableItem);
-                DebugLogSystem.LogVerbose($"ApplyPersistentPortions restored {cPersistPortions.RemainingCount}/{cPersistPortions.TotalCount} portions for item {splittableItem.Index}.");
+                DebugLogSystem.LogVerbose($"Restored {cPersistPortions.RemainingCount}/{cPersistPortions.TotalCount} portions for item {splittableItem.Index}.");
             }
         }
     }

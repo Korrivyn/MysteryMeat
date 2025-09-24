@@ -37,7 +37,7 @@ namespace KitchenMysteryMeat.Customs.Dishes
         public override void OnRegister(Dish gdo)
         {
             gdo.HideInfoPanel = true;
-            DebugLogSystem.LogVerbose("MysteryMeatDish registration hid the info panel.");
+            DebugLogSystem.LogVerbose("Registration hid the info panel for the hidden dish.");
         }
     }
 }

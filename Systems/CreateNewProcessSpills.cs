@@ -47,7 +47,7 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: obtain the holder position to anchor potential spill requests.
                 if (!Require<CPosition>(cHeldBy.Holder, out cPosition))
                 {
-                    DebugLogSystem.LogWarning($"CreateNewProcessSpills could not resolve holder position for item {item.Index}; spill generation skipped.");
+                    DebugLogSystem.LogWarning($"Unable to resolve holder position for item {item.Index}; skipping spill generation.");
                     continue;
                 }
 
@@ -73,7 +73,7 @@ namespace KitchenMysteryMeat.Systems
                         OverwriteOtherMesses = cProcessCausesSpill.OverwriteOtherMesses
                     });
                     EntityManager.AddComponentData<CPosition>(spill, cPosition);
-                    DebugLogSystem.LogVerbose($"CreateNewProcessSpills generated mess request {spill.Index} at position {cPosition.Position} for item {item.Index}.");
+                    DebugLogSystem.LogVerbose($"Generated mess request {spill.Index} at position {cPosition.Position} for item {item.Index}.");
                 }
             }
         }

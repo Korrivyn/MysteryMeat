@@ -45,7 +45,7 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: emit a warning when the fill amount dips below zero, indicating unexpected underflow.
                 if (cLimitedUseBottle.FillAmount < 0)
                 {
-                    DebugLogSystem.LogWarning("ReplaceEmptySpecialSauce detected a negative FillAmount on a sauce bottle; resetting to zero before replacement.");
+                    DebugLogSystem.LogWarning("Detected a negative FillAmount on a sauce bottle; resetting to zero before replacement.");
                     cLimitedUseBottle.FillAmount = 0;
                     EntityManager.SetComponentData(item, cLimitedUseBottle);
                 }
@@ -53,7 +53,7 @@ namespace KitchenMysteryMeat.Systems
                 // Guard: skip replacement when the bottle still contains charges.
                 if (cLimitedUseBottle.FillAmount <= 0)
                 {
-                    DebugLogSystem.LogVerbose($"ReplaceEmptySpecialSauce converting bottle entity {item.Index} to empty ID {cLimitedUseBottle.EmptyBottleID}.");
+                    DebugLogSystem.LogVerbose($"Converting bottle entity {item.Index} to empty ID {cLimitedUseBottle.EmptyBottleID}.");
                     EntityManager.AddComponentData<CChangeItemType>(item, new CChangeItemType()
                     {
                         NewID = cLimitedUseBottle.EmptyBottleID,
