@@ -55,7 +55,7 @@ namespace KitchenMysteryMeat.Systems
             {
                 // Add the interactive component so customers can be targeted by custom interactions.
                 EntityManager.AddComponent<CIsInteractive>(CustomersWithoutInteractive);
-                DebugLogSystem.LogInfo($"Added CIsInteractive to {customersNeedingInteractive.Length} customers to enable interaction handling.");
+                DebugLogSystem.LogVerbose($"Added CIsInteractive to {customersNeedingInteractive.Length} customers to enable interaction handling.");
 
                 // Emit verbose diagnostics enumerating the customers that received the interactive component.
                 StringBuilder interactiveCustomersBuilder = new StringBuilder();
@@ -110,7 +110,7 @@ namespace KitchenMysteryMeat.Systems
                     suspicionCustomersBuilder.Append(customer.Index);
                 }
 
-                DebugLogSystem.LogInfo($"Added CSuspicionIndicator to {customersNeedingSuspicionIndicator.Length} customers with a total time of {totalTime:0.##} seconds.");
+                DebugLogSystem.LogVerbose($"Added CSuspicionIndicator to {customersNeedingSuspicionIndicator.Length} customers with a total time of {totalTime:0.##} seconds.");
                 DebugLogSystem.LogVerbose($"Suspicion indicator applied to customers: {suspicionCustomersBuilder}");
             }
         }
