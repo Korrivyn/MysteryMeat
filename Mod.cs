@@ -36,6 +36,21 @@ namespace KitchenMysteryMeat
         internal static KitchenLogger Logger;
 
         /// <summary>
+        /// Identifies the canonical file name emitted by the asset bundler for Mystery Meat content.
+        /// </summary>
+        private const string AssetBundleFileName = "mod.assets";
+
+        /// <summary>
+        /// Captures the asset identifiers that uniquely belong to the Mystery Meat content bundle.
+        /// </summary>
+        private static readonly string[] AssetBundleSignatureAssets =
+        {
+            "GrindMeat",
+            "GrindMeatTex",
+            "stab-01"
+        };
+
+        /// <summary>
         /// Tracks whether BuildGameData has been subscribed for the current activation cycle.
         /// </summary>
         private static bool _buildGameDataSubscribed;
@@ -367,10 +382,12 @@ namespace KitchenMysteryMeat
                 }
                 else
                 {
-                    AssetBundle resolvedBundle = mod
+                    // Collate candidate bundles from the activation context so heuristics can isolate the Mystery Meat assets.
+                    IEnumerable<AssetBundle> candidateBundles = mod
                         .GetPacks<AssetBundleModPack>()
-                        .SelectMany(pack => pack.AssetBundles ?? Enumerable.Empty<AssetBundle>())
-                        .FirstOrDefault();
+                        .SelectMany(pack => pack.AssetBundles ?? Enumerable.Empty<AssetBundle>());
+
+                    AssetBundle resolvedBundle = ResolveAssetBundle(candidateBundles);
 
                     // Guard: confirm the asset bundle has been found before attempting to cache it.
                     if (resolvedBundle != null)
@@ -446,6 +463,66 @@ namespace KitchenMysteryMeat
 
             bool assetsReady = Bundle != null;
             return assetsReady;
+        }
+
+        /// <summary>
+        /// Attempts to resolve the Mystery Meat asset bundle from the provided activation bundles.
+        /// </summary>
+        /// <param name="candidateBundles">The set of bundles supplied by the activation context.</param>
+        /// <returns>The resolved asset bundle when a matching bundle has been located; otherwise null.</returns>
+        private static AssetBundle ResolveAssetBundle(IEnumerable<AssetBundle> candidateBundles)
+        {
+            AssetBundle resolvedBundle = null;
+
+            // Guard: ensure the candidate sequence has been supplied before attempting resolution.
+            if (candidateBundles != null)
+            {
+                AssetBundle[] bundleArray = candidateBundles
+                    .Where(bundle => bundle != null)
+                    .ToArray();
+
+                // Guard: proceed only when at least one candidate bundle exists.
+                if (bundleArray.Length > 0)
+                {
+                    // Attempt to resolve the canonical bundle by file name first.
+                    resolvedBundle = bundleArray
+                        .FirstOrDefault(bundle => string.Equals(bundle.name, AssetBundleFileName, StringComparison.OrdinalIgnoreCase));
+
+                    // Guard: fall back to signature validation when the canonical name does not match.
+                    if (resolvedBundle == null)
+                    {
+                        resolvedBundle = bundleArray
+                            .FirstOrDefault(BundleContainsSignatureAssets);
+                    }
+
+                    // Guard: avoid caching a bundle that does not pass any heuristics so repeated warnings are prevented.
+                    if (resolvedBundle != null && !BundleContainsSignatureAssets(resolvedBundle) && !string.Equals(resolvedBundle.name, AssetBundleFileName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        DebugLogSystem.LogWarning($"Mystery Meat resolved asset bundle '{resolvedBundle.name}' without signature assets; activation will retry once the correct bundle is available.");
+                        resolvedBundle = null;
+                    }
+                }
+            }
+
+            return resolvedBundle;
+        }
+
+        /// <summary>
+        /// Indicates whether the supplied bundle contains the Mystery Meat signature assets.
+        /// </summary>
+        /// <param name="bundle">The bundle under evaluation.</param>
+        /// <returns>True when every signature asset identifier is present.</returns>
+        private static bool BundleContainsSignatureAssets(AssetBundle bundle)
+        {
+            bool containsSignatures = false;
+
+            // Guard: ensure the bundle exists before querying for signature assets.
+            if (bundle != null)
+            {
+                containsSignatures = AssetBundleSignatureAssets.All(bundle.Contains);
+            }
+
+            return containsSignatures;
         }
 
         /// <summary>
