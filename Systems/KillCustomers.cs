@@ -49,7 +49,7 @@ namespace KitchenMysteryMeat.Systems
             EntityContext ctx = new EntityContext(EntityManager);
 
             // Announce the number of slain customers being processed to aid situational awareness.
-            DebugLogSystem.LogInfo($"[KillCustomers] Processing {_customers.Length} murdered customers.");
+            DebugLogSystem.LogVerbose($"[KillCustomers] Processing {_customers.Length} murdered customers.");
 
             // Iterate through each dead customer to orchestrate cleanup and corpse creation.
             for (int i = 0; i < _customers.Length; i++)
