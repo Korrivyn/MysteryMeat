@@ -98,7 +98,7 @@ namespace KitchenMysteryMeat.Systems
                         limitedUseBottle.LastUsedByCustomer = currentCustomer;
 
                         // Record the remaining sauce charge to support troubleshooting of consumption rates.
-                        DebugLogSystem.LogInfo($"[SpecialSauceServing] Consumed one sauce charge from bottle {citemHolder.HeldItem.Index}. Remaining: {limitedUseBottle.FillAmount}.");
+                        DebugLogSystem.LogVerbose($"[SpecialSauceServing] Consumed one sauce charge from bottle {citemHolder.HeldItem.Index}. Remaining: {limitedUseBottle.FillAmount}.");
 
                         EntityManager.SetComponentData(citemHolder.HeldItem, limitedUseBottle);
                     }
