@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using KitchenLib.Logging;
 using KitchenMysteryMeat.Enums;
 using UnityEngine;
@@ -186,7 +185,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             if (includeStackTrace)
             {
                 // Generate a stack trace that skips the logging helper frames for clarity.
-                string stackTrace = new StackTrace(2, true).ToString();
+                string stackTrace = new System.Diagnostics.StackTrace(2, true).ToString();
 
                 // Append the stack trace only when the generated output contains meaningful content.
                 if (!string.IsNullOrWhiteSpace(stackTrace))
