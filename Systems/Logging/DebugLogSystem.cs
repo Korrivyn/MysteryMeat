@@ -36,26 +36,27 @@ namespace KitchenMysteryMeat.Systems.Logging
         }
 
         /// <summary>
-        /// Emits an informational log entry when the configured level allows debug output.
+        /// Emits an informational log entry regardless of the configured debug level preference.
         /// </summary>
         /// <param name="message">The message to record.</param>
         public static void LogInfo(string message)
         {
-            // Resolve the logger and active level so the method can determine if logging is permitted.
+            // Resolve the logger and active level so the method can format the diagnostic output.
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+            // Compute the formatted message once so that both logging paths share the same output.
+            string formattedMessage = FormatMessage(message, activeLevel >= DebugLogLevel.On);
 
-            // Guard: log informational output through the Kitchen logger when available.
-            if (logger != null && activeLevel >= DebugLogLevel.On)
+            // Guard: log informational output through the Kitchen logger when it is available.
+            if (logger != null)
             {
-                logger.LogInfo(FormatMessage(message, includeStackTrace));
+                logger.LogInfo(formattedMessage);
             }
-            else if (activeLevel >= DebugLogLevel.On)
+            else
             {
                 // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                Debug.Log(FormatMessage(message, includeStackTrace));
+                Debug.Log(formattedMessage);
             }
         }
 
