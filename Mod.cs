@@ -153,16 +153,12 @@ namespace KitchenMysteryMeat
             _cardsRegistered = false;
             _runtimeHooksDeferredLogged = false;
 
-            // Guard: clear the cached activation context so reflection resolves the current mod instance.
-            _cachedActivationContext = null;
-            _activationContextWarningLogged = false;
-
             // Reset the debug log system to discard stale logger references between activations.
             DebugLogSystem.Initialise(null, () => ActiveDebugLogLevel);
         }
 
         /// <summary>
-        /// Handles initial mod setup by preparing core systems and queuing runtime hook registration.
+        /// Handles initial mod setup by preparing core systems and resetting runtime state.
         /// </summary>
         protected override void OnInitialise()
         {
@@ -172,26 +168,11 @@ namespace KitchenMysteryMeat
             // Prepare logging and preferences so subsequent operations can query configuration safely.
             bool coreReady = EnsureCoreInitialisation();
 
-            // Resolve the activation context so assets can be loaded during initialisation rather than activation.
-            KitchenMods.Mod activationContext = ResolveActivationContext();
-
-            // Attempt to load the asset bundle immediately to keep runtime hooks from accessing a null bundle.
-            bool assetsReady = EnsureAssetBundle(activationContext);
-
             // Guard: report when the logger or preferences are unavailable during initialisation.
             if (!coreReady)
             {
-                DebugLogSystem.LogError("Mystery Meat failed to initialise its core systems; runtime registrations have been skipped to avoid inconsistent state.");
+                DebugLogSystem.LogError("Mystery Meat failed to initialise its core systems; runtime registrations will retry after activation.");
             }
-
-            // Guard: report asset loading failures only when the activation context was available but initialisation still failed.
-            if (!assetsReady && activationContext != null)
-            {
-                DebugLogSystem.LogError("Mystery Meat failed to initialise its asset bundle; runtime registrations have been skipped to avoid inconsistent state.");
-            }
-
-            // Attempt to register runtime hooks so they activate automatically once dependencies are available.
-            TryRegisterRuntimeHooks();
         }
 
         /// <summary>
@@ -212,20 +193,20 @@ namespace KitchenMysteryMeat
         /// <param name="mod">The activation context supplied by KitchenLib.</param>
         protected override void OnPostActivate(KitchenMods.Mod mod)
         {
-            // Capture the activation context in case initialisation occurs before the framework exposes the instance.
-            CacheActivationContext(mod);
+            // Guard: ensure core services exist so activation can proceed with a configured logger and preferences.
+            if (Logger == null || PrefManager == null)
+            {
+                bool coreReady = EnsureCoreInitialisation();
 
-            // Prepare core services again in case dependencies became available only after activation.
-            bool coreReady = EnsureCoreInitialisation();
+                // Guard: surface core readiness issues when activation could not recover the dependencies.
+                if (!coreReady)
+                {
+                    DebugLogSystem.LogError("Mystery Meat activation completed without initialising its core systems; runtime registration will continue retrying until dependencies load.");
+                }
+            }
 
             // Resolve the asset bundle once the activation context has been provided explicitly.
             bool assetsReady = EnsureAssetBundle(mod);
-
-            // Guard: surface core readiness issues so diagnostics remain visible after activation.
-            if (!coreReady)
-            {
-                DebugLogSystem.LogError("Mystery Meat activation completed without initialising its core systems; runtime registration will continue retrying until dependencies load.");
-            }
 
             // Guard: surface asset readiness issues once activation has supplied the bundle context.
             if (!assetsReady && mod != null)
@@ -799,76 +780,6 @@ namespace KitchenMysteryMeat
             return clip;
         }
 
-        /// <summary>
-        /// Attempts to resolve the activation context exposed by BaseMod using reflection for initialisation tasks.
-        /// </summary>
-        /// <returns>The activation context when available; otherwise, null.</returns>
-        private KitchenMods.Mod ResolveActivationContext()
-        {
-            KitchenMods.Mod activationContext = null;
-
-            // Guard: attempt to retrieve the activation context from the BaseMod implementation using reflection.
-            if (_activationContextProperty == null)
-            {
-                _activationContextProperty = typeof(BaseMod).GetProperty("Mod", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
-            }
-
-            if (_activationContextProperty != null)
-            {
-                try
-                {
-                    activationContext = _activationContextProperty.GetValue(this) as KitchenMods.Mod;
-                }
-                catch (TargetException)
-                {
-                    DebugLogSystem.LogVerbose("Mystery Meat could not access the activation context property via reflection.");
-                }
-            }
-
-            // Guard: fall back to the cached activation context when reflection does not expose it.
-            if (activationContext == null)
-            {
-                activationContext = _cachedActivationContext;
-            }
-
-            // Guard: log verbose details only once when the context cannot be resolved during initialisation.
-            if (activationContext == null && !_activationContextWarningLogged)
-            {
-                DebugLogSystem.LogVerbose("Mystery Meat could not resolve the activation context during OnInitialise; asset loading will retry after activation.");
-                _activationContextWarningLogged = true;
-            }
-
-            return activationContext;
-        }
-
-        /// <summary>
-        /// Caches the activation context for scenarios where OnInitialise executes before BaseMod exposes the instance.
-        /// </summary>
-        /// <param name="mod">The activation context supplied by KitchenLib.</param>
-        private void CacheActivationContext(KitchenMods.Mod mod)
-        {
-            // Guard: ignore caching when the activation context has not been supplied.
-            if (mod == null)
-            {
-                return;
-            }
-
-            _cachedActivationContext = mod;
-        }
-
-        /// <summary>
-        /// Stores the reflection metadata used to resolve the BaseMod activation context.
-        /// </summary>
-        private static PropertyInfo _activationContextProperty;
-
-        /// <summary>
-        /// Tracks whether the activation context warning has been logged to avoid repeated spam.
-        /// </summary>
-        private static bool _activationContextWarningLogged;
-
-        /// <summary>
-        /// Caches the activation context provided during activation for initialisation retries.
-        /// </summary>
-        private static KitchenMods.Mod _cachedActivationContext;
+        
     }
 }
