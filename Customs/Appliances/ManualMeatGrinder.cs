@@ -7,6 +7,7 @@ using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Processes;
 using KitchenMysteryMeat.MonoBehaviours;
 using KitchenMysteryMeat.Views;
+using KitchenMysteryMeat.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -72,6 +73,9 @@ namespace KitchenMysteryMeat.Customs.Appliances
         static FieldInfo typeContainer = typeof(ConveyItemsView).GetField("TypeContainer", BindingFlags.NonPublic | BindingFlags.Instance);
         static FieldInfo animator = typeof(ConveyItemsView).GetField("Animator", BindingFlags.NonPublic | BindingFlags.Instance);*/
 
+        /// <summary>
+        /// Configures hold points, audio, and view components when the manual grinder is registered.
+        /// </summary>
         public override void OnRegister(Appliance gameDataObject)
         {
             base.OnRegister(gameDataObject);
@@ -94,6 +98,7 @@ namespace KitchenMysteryMeat.Customs.Appliances
 
 
             MeatGrinderView meatGrinderView = gameDataObject.Prefab.AddComponent<MeatGrinderView>();
+            DebugLogSystem.LogVerbose("Configured hold point, audio, and view components during registration.");
         }
     }
 }

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
+using KitchenMysteryMeat.Systems.Logging;
 
 namespace KitchenMysteryMeat.Customs.Dishes
 {
@@ -30,9 +31,13 @@ namespace KitchenMysteryMeat.Customs.Dishes
             (Locale.English, LocalisationUtils.CreateUnlockInfo("Mystery Meat", "Redrum", "How'd you get here?"))
         };
 
+        /// <summary>
+        /// Hides the info panel for the hidden base dish when registered.
+        /// </summary>
         public override void OnRegister(Dish gdo)
         {
             gdo.HideInfoPanel = true;
+            DebugLogSystem.LogVerbose("Registration hid the info panel for the hidden dish.");
         }
     }
 }
