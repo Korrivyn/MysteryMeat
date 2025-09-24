@@ -632,7 +632,7 @@ namespace KitchenMysteryMeat
             // Guard: emit the banner once and only after assets and preferences are available.
             if (!_bannerLogged && IsRuntimeReady())
             {
-                DebugLogSystem.LogInfo(ModLoadedBanner);
+                DebugLogSystem.LogInfo(MysteryMeatBanner);
                 _bannerLogged = true;
             }
         }
