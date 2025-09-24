@@ -4,6 +4,7 @@ using KitchenLib.Customs;
 using KitchenLib.References;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Customs.Items;
+using KitchenMysteryMeat.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,9 +56,13 @@ namespace KitchenMysteryMeat.Customs.Appliances
             KitchenPropertiesUtils.GetCItemProvider(GDOUtils.GetCustomGameDataObject<EmptySpecialSauceBottle>().ID, 1, 1, false, false, true, false, false, true, false),
         };
 
+        /// <summary>
+        /// Configures the countertop prefab to dispense special sauce bottles.
+        /// </summary>
         public override void OnRegister(Appliance gameDataObject)
         {
             Helper.SetupCounterLimitedItem(Prefab, Mod.Bundle.LoadAsset<GameObject>("Empty Special Sauce Bottle").AssignMaterialsByNames().AssignVFXByNames());
+            DebugLogSystem.LogVerbose("SpecialSauceProvider initialised limited item setup during registration.");
         }
     }
 }

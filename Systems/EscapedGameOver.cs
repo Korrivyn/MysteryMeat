@@ -2,11 +2,7 @@
 using KitchenData;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using KitchenMysteryMeat.Systems.Logging;
 using Unity.Collections;
 using Unity.Entities;
 using UnityEngine;
@@ -14,11 +10,17 @@ using UnityEngine.UI;
 
 namespace KitchenMysteryMeat.Systems
 {
+    /// <summary>
+    /// Triggers the game-over condition when alerted customers successfully flee the restaurant.
+    /// </summary>
     public class EscapedGameOver : GameSystemBase, IModSystem
     {
         EntityQuery Customers;
         private ComponentType? ReachedDestinationComponentType;
 
+        /// <summary>
+        /// Builds the query that tracks fleeing customers and resolves the destination component metadata.
+        /// </summary>
         protected override void Initialise()
         {
             base.Initialise();
@@ -28,11 +30,26 @@ namespace KitchenMysteryMeat.Systems
                             .All(typeof(CPosition), typeof(CCustomer), typeof(CCustomerLeaving), typeof(CAlertedCustomer)));
 
             ReachedDestinationComponentType = TryGetReachedDestinationComponentType();
+
+            // Guard: notify when the destination component could not be located for diagnostic purposes.
+            if (!ReachedDestinationComponentType.HasValue)
+            {
+                DebugLogSystem.LogWarning("EscapedGameOver could not resolve CReachedDestination; falling back to distance checks.");
+            }
         }
 
+        /// <summary>
+        /// Ends the run when an alerted customer reaches the escape boundary.
+        /// </summary>
         protected override void OnUpdate()
         {
             using NativeArray<Entity> _customers = Customers.ToEntityArray(Allocator.Temp);
+
+            // Guard: exit when no alerted customers are currently fleeing the restaurant.
+            if (_customers.Length == 0)
+            {
+                return;
+            }
 
             for (int i = 0; i < _customers.Length; i++)
             {
@@ -55,11 +72,15 @@ namespace KitchenMysteryMeat.Systems
                     // End game if exited
                     EntityManager.CreateEntity(typeof(CLoseLifeEvent));
                     EntityManager.DestroyEntity(customer);
+                    DebugLogSystem.LogWarning($"EscapedGameOver triggered game over because alerted customer {customer.Index} exited the restaurant.");
                     break;
                 }
             }
         }
 
+        /// <summary>
+        /// Locates the destination component type, supporting multiple assembly locations.
+        /// </summary>
         private static ComponentType? TryGetReachedDestinationComponentType()
         {
             Type type = Type.GetType("Kitchen.CReachedDestination, KitchenMode")
@@ -68,6 +89,7 @@ namespace KitchenMysteryMeat.Systems
 
             if (type == null)
             {
+                DebugLogSystem.LogWarning("EscapedGameOver could not locate Kitchen.CReachedDestination in any known assembly.");
                 return null;
             }
 

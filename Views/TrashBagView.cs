@@ -1,6 +1,7 @@
 ﻿using Kitchen;
 using KitchenMods;
 using KitchenMysteryMeat.Components;
+using KitchenMysteryMeat.Systems.Logging;
 using MessagePack;
 using System;
 using System.Collections.Generic;
@@ -13,10 +14,17 @@ using UnityEngine;
 
 namespace KitchenMysteryMeat.Views
 {
+    /// <summary>
+    /// Synchronises the trash bag visuals with stored corpse data to represent remaining portions.
+    /// </summary>
     public class TrashBagView : UpdatableObjectView<TrashBagView.ViewData>
     {
         public Transform TrashBag;
         public Transform CorpsesParent;
+
+        /// <summary>
+        /// Captures transform references for the trash bag visuals and corpse container.
+        /// </summary>
         private void Awake()
         {
             TrashBag = transform.Find("Trash Bag");
@@ -25,11 +33,21 @@ namespace KitchenMysteryMeat.Views
             CorpsesParent.gameObject.SetActive(false);
         }
 
+        /// <summary>
+        /// Toggles corpse meshes based on the supplied view data and tracks invalid state for debugging.
+        /// </summary>
         protected override void UpdateData(TrashBagView.ViewData data)
         {
+            // Guard: ensure required transforms are available before applying updates.
+            if (TrashBag == null || CorpsesParent == null)
+            {
+                DebugLogSystem.LogWarning("TrashBagView attempted to update without configured transforms.");
+                return;
+            }
+
             TrashBag.gameObject.SetActive(!data.ContainsCorpse);
             CorpsesParent.gameObject.SetActive(data.ContainsCorpse);
-            
+
             if (data.ContainsCorpse)
             {
                 for (int i = 0; i < CorpsesParent.childCount; i++)
@@ -41,15 +59,24 @@ namespace KitchenMysteryMeat.Views
             }
         }
 
+        /// <summary>
+        /// System responsible for pushing trash bag view updates from ECS data.
+        /// </summary>
         public class UpdateView : IncrementalViewSystemBase<ViewData>, IModSystem
         {
             private EntityQuery query;
+            /// <summary>
+            /// Builds the query that locates trash bags with linked views and stored items.
+            /// </summary>
             protected override void Initialise()
             {
                 base.Initialise();
                 query = GetEntityQuery(new QueryHelper().All(typeof(CLinkedView), typeof(CTrashBag), typeof(CItemStored)));
             }
 
+            /// <summary>
+            /// Pushes updated corpse counts to the linked trash bag views.
+            /// </summary>
             protected override void OnUpdate()
             {
                 using var entities = query.ToEntityArray(Allocator.Temp);
@@ -68,13 +95,18 @@ namespace KitchenMysteryMeat.Views
                             TotalPortions = cSplittableItem.TotalCount,
                             RemainingPortions = cSplittableItem.RemainingCount,
                         }, MessageType.SpecificViewUpdate);
-                    }   
+                        DebugLogSystem.LogVerbose($"TrashBagView.UpdateView pushed corpse counts {cSplittableItem.RemainingCount}/{cSplittableItem.TotalCount} for entity {entities[i].Index}.");
+                    }
                     else
                     {
                         SendUpdate(view, new ViewData
                         {
                             ContainsCorpse = false,
                         }, MessageType.SpecificViewUpdate);
+                        if (itemStored.Length == 0)
+                        {
+                            DebugLogSystem.LogVerbose($"TrashBagView.UpdateView cleared corpse visuals because trash bag {entities[i].Index} has no stored items.");
+                        }
                     }
                 }
             }

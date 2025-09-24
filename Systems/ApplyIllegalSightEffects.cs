@@ -14,6 +14,9 @@ using Unity.Entities;
 
 namespace KitchenMysteryMeat.Systems
 {
+    /// <summary>
+    /// Applies illegal sight transformation effects at the start of each day.
+    /// </summary>
     public class ApplyIllegalSightEffects : StartOfDaySystem, IModSystem
     {
         /// <summary>

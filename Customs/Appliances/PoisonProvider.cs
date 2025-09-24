@@ -4,6 +4,7 @@ using KitchenLib.Customs;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Items;
+using KitchenMysteryMeat.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,9 +45,13 @@ namespace KitchenMysteryMeat.Customs.Appliances
             KitchenPropertiesUtils.GetCItemProvider(GDOUtils.GetCustomGameDataObject<PoisonBottle>().ID, 1, 1, false, false, true, false, false, true, false),
         };
 
+        /// <summary>
+        /// Configures the countertop to dispense poison bottles for gameplay interactions.
+        /// </summary>
         public override void OnRegister(Appliance gameDataObject)
         {
             Helper.SetupCounterLimitedItem(Prefab, Mod.Bundle.LoadAsset<GameObject>("Poison Bottle").AssignMaterialsByNames().AssignVFXByNames());
+            DebugLogSystem.LogVerbose("PoisonProvider initialised limited item setup during registration.");
         }
     }
 }

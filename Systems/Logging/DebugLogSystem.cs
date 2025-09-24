@@ -1,4 +1,7 @@
 using System;
+using System.Diagnostics;
+using System.IO;
+using System.Reflection;
 using KitchenLib.Logging;
 using KitchenMysteryMeat.Enums;
 using UnityEngine;
@@ -46,7 +49,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
             // Compute the formatted message once so that both logging paths share the same output.
-            string formattedMessage = FormatMessage(message, activeLevel >= DebugLogLevel.On);
+            string formattedMessage = FormatMessage(message, activeLevel >= DebugLogLevel.On, false);
 
             // Guard: log informational output through the Kitchen logger when it is available.
             if (logger != null)
@@ -75,12 +78,12 @@ namespace KitchenMysteryMeat.Systems.Logging
             // Guard: log warning output through the Kitchen logger when available.
             if (logger != null && activeLevel >= DebugLogLevel.On)
             {
-                logger.LogWarning(FormatMessage(message, includeStackTrace));
+                logger.LogWarning(FormatMessage(message, includeStackTrace, true));
             }
             else if (activeLevel >= DebugLogLevel.On)
             {
                 // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                Debug.LogWarning(FormatMessage(message, includeStackTrace));
+                Debug.LogWarning(FormatMessage(message, includeStackTrace, true));
             }
         }
 
@@ -99,12 +102,12 @@ namespace KitchenMysteryMeat.Systems.Logging
             // Guard: emit error output through the Kitchen logger when available.
             if (logger != null)
             {
-                logger.LogError(FormatMessage(message, includeStackTrace));
+                logger.LogError(FormatMessage(message, includeStackTrace, true));
             }
             else
             {
                 // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
-                Debug.LogError(FormatMessage(message, includeStackTrace));
+                Debug.LogError(FormatMessage(message, includeStackTrace, true));
             }
         }
 
@@ -122,7 +125,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             if (activeLevel >= DebugLogLevel.Verbose)
             {
                 // Verbose logging always includes the stack trace to maximise diagnostic value.
-                string formattedMessage = FormatMessage(message, true);
+                string formattedMessage = FormatMessage(message, true, true);
 
                 // Guard: emit verbose output using the Kitchen logger when available.
                 if (logger != null)
@@ -177,16 +180,26 @@ namespace KitchenMysteryMeat.Systems.Logging
         /// <param name="message">The message to format.</param>
         /// <param name="includeStackTrace">A value indicating whether a stack trace should be appended.</param>
         /// <returns>The formatted message ready for logging.</returns>
-        private static string FormatMessage(string message, bool includeStackTrace)
+        private static string FormatMessage(string message, bool includeStackTrace, bool includePrefix)
         {
             // Default null messages to an empty string before formatting output for the logger.
             string formattedMessage = message ?? string.Empty;
+
+            // Append a source prefix when required to support quicker log triage.
+            if (includePrefix)
+            {
+                string prefix = GetLogSourcePrefix();
+                if (!string.IsNullOrEmpty(prefix) && !formattedMessage.StartsWith(prefix, StringComparison.Ordinal))
+                {
+                    formattedMessage = $"{prefix} {formattedMessage}";
+                }
+            }
 
             // Append the stack trace when verbose diagnostics are requested.
             if (includeStackTrace)
             {
                 // Generate a stack trace that skips the logging helper frames for clarity.
-                string stackTrace = new System.Diagnostics.StackTrace(2, true).ToString();
+                string stackTrace = new StackTrace(2, true).ToString();
 
                 // Append the stack trace only when the generated output contains meaningful content.
                 if (!string.IsNullOrWhiteSpace(stackTrace))
@@ -196,6 +209,39 @@ namespace KitchenMysteryMeat.Systems.Logging
             }
 
             return formattedMessage;
+        }
+
+        /// <summary>
+        /// Computes a standardised prefix containing the originating file name when available.
+        /// </summary>
+        /// <returns>The formatted prefix ready for inclusion in log messages.</returns>
+        private static string GetLogSourcePrefix()
+        {
+            const string defaultPrefix = "[MysteryMeat]";
+
+            StackTrace trace = new StackTrace(3, true);
+            StackFrame frame = trace.GetFrame(0);
+
+            if (frame != null)
+            {
+                string fileName = frame.GetFileName();
+                if (!string.IsNullOrEmpty(fileName))
+                {
+                    string shortName = Path.GetFileName(fileName);
+                    if (!string.IsNullOrEmpty(shortName))
+                    {
+                        return $"[{shortName}]";
+                    }
+                }
+
+                MethodBase method = frame.GetMethod();
+                if (method?.DeclaringType != null)
+                {
+                    return $"[{method.DeclaringType.Name}]";
+                }
+            }
+
+            return defaultPrefix;
         }
     }
 }

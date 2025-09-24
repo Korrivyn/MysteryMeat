@@ -4,6 +4,7 @@ using KitchenLib.Customs;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Appliances;
+using KitchenMysteryMeat.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,12 +46,16 @@ namespace KitchenMysteryMeat.Customs.Items
             new CPreservedOvernight()
         };
 
+        /// <summary>
+        /// Ensures the rotten corpse prefab exposes the corpse view component when registered.
+        /// </summary>
         public override void OnRegister(Item item)
         {
             if (!Prefab.HasComponent<CustomerCorpseItemView>())
             {
                 var view = Prefab.AddComponent<CustomerCorpseItemView>();
                 view.Setup(Prefab);
+                DebugLogSystem.LogVerbose("RottenCustomerCorpse attached CustomerCorpseItemView during registration.");
             }
         }
     }

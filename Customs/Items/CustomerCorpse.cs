@@ -5,6 +5,7 @@ using KitchenLib.References;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Appliances;
+using KitchenMysteryMeat.Systems.Logging;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,9 @@ namespace KitchenMysteryMeat.Customs.Items
 {
     public class CustomerCorpseItemView : ObjectsSplittableView
     {
+        /// <summary>
+        /// Configures corpse stage objects for the splittable view rendering.
+        /// </summary>
         internal void Setup(GameObject prefab)
         {
             var fObjects = ReflectionUtils.GetField<ObjectsSplittableView>("Objects");
@@ -58,12 +62,16 @@ namespace KitchenMysteryMeat.Customs.Items
             },
         };
 
+        /// <summary>
+        /// Ensures the corpse prefab includes the splittable view used for portion rendering.
+        /// </summary>
         public override void OnRegister(Item item)
         {
             if (!Prefab.HasComponent<CustomerCorpseItemView>())
             {
                 var view = Prefab.AddComponent<CustomerCorpseItemView>();
                 view.Setup(Prefab);
+                DebugLogSystem.LogVerbose("CustomerCorpse attached CustomerCorpseItemView during registration.");
             }
         }
     }
