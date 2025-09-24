@@ -213,7 +213,7 @@ namespace KitchenMysteryMeat
             {
                 // Emit a startup info post through the debug helper so it respects the configured verbosity.
                 DebugLogSystem.LogInfo(MysteryMeatBanner);
-
+            }
             // Attempt to register runtime hooks now that activation has supplied every dependency.
             TryRegisterRuntimeHooks();
 
