@@ -39,7 +39,7 @@ namespace KitchenMysteryMeat
         /// <summary>
         /// Gets the ASCII art banner displayed when the mod is initialised.
         /// </summary>
-        private static string ModLoadedBanner
+        private static string MysteryMeatBanner
         {
             get
             {
@@ -145,9 +145,6 @@ namespace KitchenMysteryMeat
             }
             else
             {
-                // Emit a startup info post through the debug helper so it respects the configured verbosity.
-                DebugLogSystem.LogInfo(ModLoadedBanner);
-
                 // Collates enabled card registrations so duplicate preference checks are avoided.
                 (bool IsEnabled, Action RegisterCard)[] cardRegistrations =
                 {
@@ -172,6 +169,9 @@ namespace KitchenMysteryMeat
                     Events.BuildGameDataEvent += OnBuildGameData;
                     _buildGameDataSubscribed = true;
                 }
+
+                // Emit a startup info post through the debug helper so it respects the configured verbosity.
+                DebugLogSystem.LogInfo(MysteryMeatBanner);
             }
         }
 
