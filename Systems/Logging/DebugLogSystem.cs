@@ -1,5 +1,4 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using KitchenLib.Logging;
@@ -199,7 +198,7 @@ namespace KitchenMysteryMeat.Systems.Logging
             if (includeStackTrace)
             {
                 // Generate a stack trace that skips the logging helper frames for clarity.
-                string stackTrace = new StackTrace(2, true).ToString();
+                string stackTrace = new System.Diagnostics.StackTrace(2, true).ToString();
 
                 // Append the stack trace only when the generated output contains meaningful content.
                 if (!string.IsNullOrWhiteSpace(stackTrace))
@@ -219,8 +218,8 @@ namespace KitchenMysteryMeat.Systems.Logging
         {
             const string defaultPrefix = "[MysteryMeat]";
 
-            StackTrace trace = new StackTrace(3, true);
-            StackFrame frame = trace.GetFrame(0);
+            System.Diagnostics.StackTrace trace = new System.Diagnostics.StackTrace(3, true);
+            System.Diagnostics.StackFrame frame = trace.GetFrame(0);
 
             if (frame != null)
             {
