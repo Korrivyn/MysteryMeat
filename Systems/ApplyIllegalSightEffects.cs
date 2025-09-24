@@ -30,7 +30,7 @@ namespace KitchenMysteryMeat.Systems
             using (NativeArray<Entity> allEntities = query.ToEntityArray(Allocator.Temp))
             {
                 // Log the total number of illegal entities discovered for debugging purposes using the debug helper.
-                DebugLogSystem.LogInfo($"[ApplyIllegalSightEffects] Processing {allEntities.Length} illegal entities at day start.");
+                DebugLogSystem.LogVerbose($"[ApplyIllegalSightEffects] Processing {allEntities.Length} illegal entities at day start.");
 
                 // Guard: short-circuit when no illegal entities require processing.
                 if (allEntities.Length > 0)

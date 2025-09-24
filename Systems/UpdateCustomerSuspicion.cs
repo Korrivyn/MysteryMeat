@@ -139,7 +139,7 @@ namespace KitchenMysteryMeat.Systems
                         EntityManager.AddComponent<CAlertedCustomer>(customer);
                     }
 
-                    DebugLogSystem.LogInfo($"[UpdateCustomerSuspicion] Customer {customer.Index} is fleeing after reaching maximum suspicion.");
+                    DebugLogSystem.LogVerbose($"[UpdateCustomerSuspicion] Customer {customer.Index} is fleeing after reaching maximum suspicion.");
                     // Notify the group to leave when a member has fled.
                     if (Require<CBelongsToGroup>(customer, out CBelongsToGroup alertGroup))
                     {

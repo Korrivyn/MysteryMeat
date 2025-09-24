@@ -94,7 +94,7 @@ namespace KitchenMysteryMeat.Systems
                     {
                         EntityManager.AddComponent<CPoisoned>(occupantItem.HeldItem);
                         CSoundEvent.Create(EntityManager, Mod.PoisonSoundEvent);
-                        DebugLogSystem.LogInfo($"Applied poison to entity {occupantItem.HeldItem.Index} using interactor {automatedInteractor.Index}.");
+                        DebugLogSystem.LogVerbose($"Applied poison to entity {occupantItem.HeldItem.Index} using interactor {automatedInteractor.Index}.");
                     }
                     else
                     {

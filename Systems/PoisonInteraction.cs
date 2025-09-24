@@ -106,7 +106,7 @@ namespace KitchenMysteryMeat.Systems
             if (playerProvidesPoison && applianceHasEligibleItem)
             {
                 EntityManager.AddComponent<CPoisoned>(applianceHeldItem.HeldItem);
-                DebugLogSystem.LogInfo("[PoisonInteraction:Perform] Player bottle poisoned the appliance-held item.");
+                DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Player bottle poisoned the appliance-held item.");
                 DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Poison status applied to the appliance-held item.");
                 poisonApplied = true;
             }
@@ -116,7 +116,7 @@ namespace KitchenMysteryMeat.Systems
             if (!poisonApplied && applianceProvidesPoison && playerHasEligibleItem)
             {
                 EntityManager.AddComponent<CPoisoned>(playerHeldItem.HeldItem);
-                DebugLogSystem.LogInfo("[PoisonInteraction:Perform] Appliance bottle poisoned the player-held item.");
+                DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Appliance bottle poisoned the player-held item.");
                 DebugLogSystem.LogVerbose("[PoisonInteraction:Perform] Poison status applied to the player-held item.");
                 poisonApplied = true;
             }
