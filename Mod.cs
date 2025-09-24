@@ -191,7 +191,13 @@ namespace KitchenMysteryMeat
             // Guard: retry runtime hook registration and banner emission only while pending actions remain.
             if (!_cardsRegistered || !_buildGameDataSubscribed || !_bannerLogged)
             {
-                TryRegisterRuntimeHooks();
+                // Attempt to register runtime hooks now that activation has supplied every dependency.
+                if (TryRegisterRuntimeHooks())
+                {
+                    // Emit a startup info post through the debug helper so it respects the configured verbosity.
+                    DebugLogSystem.LogInfo(MysteryMeatBanner);
+                    _bannerLogged = true;
+                }
             }
         }
 
@@ -229,12 +235,13 @@ namespace KitchenMysteryMeat
             }
             else
             {
-                // Emit a startup info post through the debug helper so it respects the configured verbosity.
-                DebugLogSystem.LogInfo(MysteryMeatBanner);
-                _bannerLogged = true;
-
                 // Attempt to register runtime hooks now that activation has supplied every dependency.
-                TryRegisterRuntimeHooks();
+                if (TryRegisterRuntimeHooks())
+                {
+                    // Emit a startup info post through the debug helper so it respects the configured verbosity.
+                    DebugLogSystem.LogInfo(MysteryMeatBanner);
+                    _bannerLogged = true;
+                }
             }
         }
 
@@ -575,7 +582,7 @@ namespace KitchenMysteryMeat
         /// <summary>
         /// Attempts to register runtime hooks such as cards and game data subscriptions when dependencies are ready.
         /// </summary>
-        private void TryRegisterRuntimeHooks()
+        private bool TryRegisterRuntimeHooks()
         {
             // Guard: retry core initialisation when preferences are unavailable so transient failures can recover.
             if (PrefManager == null)
@@ -588,7 +595,7 @@ namespace KitchenMysteryMeat
             // Guard: defer registration until both assets and preferences are available.
             if (!runtimeReady)
             {
-                return;
+                return false;
             }
 
             // Guard: register cards only once per activation to avoid duplicate game data objects.
@@ -603,6 +610,8 @@ namespace KitchenMysteryMeat
 
             // Emit the banner once runtime readiness has been observed.
             AnnounceRuntimeReadinessIfNeeded();
+
+            return true;
         }
 
         /// <summary>
