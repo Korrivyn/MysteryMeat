@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using KitchenLib.Logging;
 using KitchenMysteryMeat.Enums;
+using UnityEngine;
 
 namespace KitchenMysteryMeat.Systems.Logging
 {
@@ -28,21 +29,11 @@ namespace KitchenMysteryMeat.Systems.Logging
         /// <param name="levelProvider">A delegate that exposes the current debug log level.</param>
         public static void Initialise(KitchenLogger logger, Func<DebugLogLevel> levelProvider)
         {
-            // Store the supplied logger when available so future writes share the reference.
-            if (logger != null)
-            {
-                _logger = logger;
-            }
+            // Store the supplied logger reference so future writes can reuse it or clear it when null is supplied.
+            _logger = logger;
 
             // Capture the level provider or fall back to the mod accessor when no override is supplied.
-            if (levelProvider != null)
-            {
-                _levelProvider = levelProvider;
-            }
-            else
-            {
-                _levelProvider = () => Mod.ActiveDebugLogLevel;
-            }
+            _levelProvider = levelProvider ?? (() => Mod.ActiveDebugLogLevel);
         }
 
         /// <summary>
@@ -55,12 +46,17 @@ namespace KitchenMysteryMeat.Systems.Logging
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Guard: skip logging when the logger is unavailable or informational output is disabled.
+            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+
+            // Guard: log informational output through the Kitchen logger when available.
             if (logger != null && activeLevel >= DebugLogLevel.On)
             {
-                // Include stack traces when the level is at least On to aid diagnostics.
-                bool includeStackTrace = activeLevel >= DebugLogLevel.On;
                 logger.LogInfo(FormatMessage(message, includeStackTrace));
+            }
+            else if (activeLevel >= DebugLogLevel.On)
+            {
+                // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
+                Debug.Log(FormatMessage(message, includeStackTrace));
             }
         }
 
@@ -74,12 +70,17 @@ namespace KitchenMysteryMeat.Systems.Logging
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Guard: skip logging when the logger is unavailable or warning output is disabled.
+            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+
+            // Guard: log warning output through the Kitchen logger when available.
             if (logger != null && activeLevel >= DebugLogLevel.On)
             {
-                // Include stack traces when the level is at least On to aid diagnostics.
-                bool includeStackTrace = activeLevel >= DebugLogLevel.On;
                 logger.LogWarning(FormatMessage(message, includeStackTrace));
+            }
+            else if (activeLevel >= DebugLogLevel.On)
+            {
+                // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
+                Debug.LogWarning(FormatMessage(message, includeStackTrace));
             }
         }
 
@@ -93,12 +94,17 @@ namespace KitchenMysteryMeat.Systems.Logging
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Guard: skip logging when the logger is unavailable.
+            bool includeStackTrace = activeLevel >= DebugLogLevel.On;
+
+            // Guard: emit error output through the Kitchen logger when available.
             if (logger != null)
             {
-                // Include stack traces when the configured level permits expanded diagnostics.
-                bool includeStackTrace = activeLevel >= DebugLogLevel.On;
                 logger.LogError(FormatMessage(message, includeStackTrace));
+            }
+            else
+            {
+                // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
+                Debug.LogError(FormatMessage(message, includeStackTrace));
             }
         }
 
@@ -112,11 +118,22 @@ namespace KitchenMysteryMeat.Systems.Logging
             KitchenLogger logger = ResolveLogger();
             DebugLogLevel activeLevel = GetActiveDebugLogLevel();
 
-            // Guard: skip logging when the logger is unavailable or verbose output is disabled.
-            if (logger != null && activeLevel >= DebugLogLevel.Verbose)
+            // Guard: skip logging when verbose output is disabled entirely.
+            if (activeLevel >= DebugLogLevel.Verbose)
             {
                 // Verbose logging always includes the stack trace to maximise diagnostic value.
-                logger.LogInfo(FormatMessage(message, true));
+                string formattedMessage = FormatMessage(message, true);
+
+                // Guard: emit verbose output using the Kitchen logger when available.
+                if (logger != null)
+                {
+                    logger.LogInfo(formattedMessage);
+                }
+                else
+                {
+                    // Guard: fall back to Unity diagnostics when the Kitchen logger is unavailable.
+                    Debug.Log(formattedMessage);
+                }
             }
         }
 
