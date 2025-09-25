@@ -1,21 +1,31 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Describes spill behaviour that is triggered when a specific process runs on an item or appliance.
+    /// </summary>
     public struct CProcessCausesSpill : IModComponent, IItemProperty, IAttachableProperty
     {
+        /// <summary>
+        /// Identifies the process that should emit spill messes when executed.
+        /// </summary>
         public int Process;
-        // ID of Spill
+
+        /// <summary>
+        /// Points to the mess ID that should be spawned as part of the spill.
+        /// </summary>
         public int ID;
-        // Rate of Spilling
+
+        /// <summary>
+        /// Indicates how quickly the spill should accumulate while the process runs.
+        /// </summary>
         public float Rate;
-        // Will this replace other messes
+
+        /// <summary>
+        /// Determines whether the generated mess should overwrite existing messes at the location.
+        /// </summary>
         public bool OverwriteOtherMesses;
     }
 }

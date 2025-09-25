@@ -1,13 +1,11 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Identifies bottles that contain poison so interaction systems can apply lethal effects.
+    /// </summary>
     public struct CPoisonBottle : IModComponent, IItemProperty, IAttachableProperty
     {
     }

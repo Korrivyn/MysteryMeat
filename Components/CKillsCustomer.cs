@@ -1,14 +1,11 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Unity.Entities;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Tags tools and items that can directly kill customers when used by the player.
+    /// </summary>
     public struct CKillsCustomer : IModComponent, IItemProperty, IAttachableProperty
     {
     }

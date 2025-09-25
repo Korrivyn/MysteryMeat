@@ -1,17 +1,17 @@
-﻿using KitchenData;
+using System.Collections.Generic;
+using KitchenData;
 using KitchenLib.Customs;
 using KitchenLib.References;
 using KitchenLib.Utils;
 using KitchenMysteryMeat.Customs.Items;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using KitchenMysteryMeat.Systems.Logging;
 using UnityEngine;
 
 namespace KitchenMysteryMeat.Customs.Dishes
 {
+    /// <summary>
+    /// Unlocks the pie variant that extends mystery meat into oven-baked dishes with pastry preparation.
+    /// </summary>
     public class MysteryMeatPieDish : CustomDish
     {
         public override string UniqueNameID => "MysteryMeatPieDish";
@@ -31,18 +31,17 @@ namespace KitchenMysteryMeat.Customs.Dishes
             (Dish)GDOUtils.GetCustomGameDataObject<MysteryMeatBurgerDish>().GameDataObject
         };
 
-        public override List<Dish.MenuItem> ResultingMenuItems => new List<Dish.MenuItem>
+        public override List<Dish.MenuItem> ResultingMenuItems => new()
         {
             new Dish.MenuItem
             {
                 Item = (Item)GDOUtils.GetExistingGDO(ItemReferences.PiePlated),
                 Phase = MenuPhase.Main,
-                Weight = 1,
+                Weight = 1
             }
         };
 
-
-        public override HashSet<Dish.IngredientUnlock> IngredientsUnlocks => new HashSet<Dish.IngredientUnlock>
+        public override HashSet<Dish.IngredientUnlock> IngredientsUnlocks => new()
         {
             new Dish.IngredientUnlock
             {
@@ -51,31 +50,47 @@ namespace KitchenMysteryMeat.Customs.Dishes
             }
         };
 
-        public override HashSet<Item> MinimumIngredients => new HashSet<Item>
+        public override HashSet<Item> MinimumIngredients => new()
         {
             (Item)GDOUtils.GetCustomGameDataObject<MeatCleaver>().GameDataObject,
             (Item)GDOUtils.GetExistingGDO(ItemReferences.Water),
             (Item)GDOUtils.GetExistingGDO(ItemReferences.Flour),
-            (Item)GDOUtils.GetExistingGDO(ItemReferences.Plate),
-        };
-        public override HashSet<Process> RequiredProcesses => new HashSet<Process>
-        {
-            (Process)GDOUtils.GetExistingGDO(ProcessReferences.RequireOven),
-            (Process)GDOUtils.GetExistingGDO(ProcessReferences.Knead),
+            (Item)GDOUtils.GetExistingGDO(ItemReferences.Plate)
         };
 
-        public override Dictionary<Locale, string> Recipe => new Dictionary<Locale, string>
+        public override HashSet<Process> RequiredProcesses => new()
+        {
+            (Process)GDOUtils.GetExistingGDO(ProcessReferences.RequireOven),
+            (Process)GDOUtils.GetExistingGDO(ProcessReferences.Knead)
+        };
+
+        public override Dictionary<Locale, string> Recipe => new()
         {
             { Locale.English, "Knead flour (or add water) to create dough, then knead into pie crust. Add 'fresh meat' and cook." }
         };
+
         public override List<(Locale, UnlockInfo)> InfoList => new()
         {
             (Locale.English, new UnlockInfo
             {
                 Name = "Mystery Meat Pies",
                 Description = "Adds \"fresh meat\" pies as a main",
-                FlavourText = ""
+                FlavourText = string.Empty
             })
         };
+
+        /// <summary>
+        /// Logs the special oven requirement that differentiates the pie unlock.
+        /// </summary>
+        /// <param name="gameDataObject">The dish definition being registered.</param>
+        public override void OnRegister(Dish gameDataObject)
+        {
+            base.OnRegister(gameDataObject);
+
+            int ovenRequirementId = GDOUtils.GetExistingGDO(ProcessReferences.RequireOven).ID;
+
+            DebugLogSystem.LogVerbose(
+                $"MysteryMeatPieDish registered with oven requirement {ovenRequirementId} and pastry ingredient unlock.");
+        }
     }
 }

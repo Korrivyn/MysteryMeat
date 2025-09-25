@@ -1,15 +1,16 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Directs systems to replace an item with another item definition when specific triggers fire.
+    /// </summary>
     public struct CTurnIntoItem : IModComponent, IItemProperty, IAttachableProperty
     {
+        /// <summary>
+        /// Stores the ID for the item that should replace the current entity once the conversion happens.
+        /// </summary>
         public int NewID;
     }
 }

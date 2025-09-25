@@ -1,13 +1,11 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Marks trash bags so systems can enforce special carrying rules and disposal logic.
+    /// </summary>
     public struct CTrashBag : IModComponent, IItemProperty, IAttachableProperty
     {
     }
