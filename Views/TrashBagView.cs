@@ -45,9 +45,11 @@ namespace KitchenMysteryMeat.Views
                 return;
             }
 
+            // Toggle bag visibility to reflect whether a corpse bundle is stored.
             TrashBag.gameObject.SetActive(!data.ContainsCorpse);
             CorpsesParent.gameObject.SetActive(data.ContainsCorpse);
 
+            // Reveal the correct corpse mesh according to the consumed portion count.
             if (data.ContainsCorpse)
             {
                 for (int i = 0; i < CorpsesParent.childCount; i++)
@@ -86,7 +88,7 @@ namespace KitchenMysteryMeat.Views
                 {
                     var view = views[i];
                     var itemStored = GetBuffer<CItemStored>(entities[i]);
-                    // Since I know there will only ever be 1, just get first index of stored items
+                    // Guard: evaluate the first stored item because trash bags only track a single corpse bundle.
                     if (itemStored.Length > 0 && itemStored[0].StoredItem != default && Require<CSplittableItem>(itemStored[0].StoredItem, out var cSplittableItem))
                     {
                         SendUpdate(view, new ViewData
@@ -119,8 +121,18 @@ namespace KitchenMysteryMeat.Views
             [Key(1)] public int TotalPortions;
             [Key(2)] public int RemainingPortions;
 
+            /// <summary>
+            /// Retrieves the trash bag view that should receive this data payload.
+            /// </summary>
+            /// <param name="view">The object view used to locate the subview.</param>
+            /// <returns>The trash bag subview.</returns>
             public IUpdatableObject GetRelevantSubview(IObjectView view) => view.GetSubView<TrashBagView>();
 
+            /// <summary>
+            /// Determines whether the corpse counts have changed to decide if a refresh is required.
+            /// </summary>
+            /// <param name="check">The prior view data to compare.</param>
+            /// <returns>True when the data differs.</returns>
             public bool IsChangedFrom(ViewData check) => check.TotalPortions != TotalPortions || check.RemainingPortions != RemainingPortions || check.ContainsCorpse != ContainsCorpse;
         }
     }

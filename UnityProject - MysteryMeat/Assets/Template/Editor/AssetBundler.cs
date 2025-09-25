@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 
@@ -42,54 +43,186 @@ public class AssetBundler
     private int NumWarnings;
 
     /// <summary>
-    /// Number of warnings encountered.
+    /// Tracks the temporary asset bundle tag generated during build.
     /// </summary>
     private string GeneratedAssetBundleTag;
 
+    /// <summary>
+    /// Provides reflection based access to the runtime debug log system while working inside the Unity editor.
+    /// </summary>
+    private static class EditorDebugLogBridge
+    {
+        private static Type _debugType;
+        private static MethodInfo _infoMethod;
+        private static MethodInfo _warningMethod;
+        private static MethodInfo _errorMethod;
+        private static MethodInfo _verboseMethod;
+
+        /// <summary>
+        /// Locates the runtime logging helper so editor diagnostics can share the same routing.
+        /// </summary>
+        /// <returns>The runtime logging type when available.</returns>
+        private static Type ResolveDebugType()
+        {
+            if (_debugType != null)
+            {
+                return _debugType;
+            }
+
+            // Attempt to locate the runtime logging helper so editor tooling can reuse its configuration.
+            foreach (Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+            {
+                Type candidate = assembly.GetType("KitchenMysteryMeat.Systems.Logging.DebugLogSystem");
+                if (candidate != null)
+                {
+                    _debugType = candidate;
+                    break;
+                }
+            }
+
+            return _debugType;
+        }
+
+        /// <summary>
+        /// Retrieves the requested logging method from the runtime helper and caches it for reuse.
+        /// </summary>
+        /// <param name="cache">A reference to the cached method slot.</param>
+        /// <param name="methodName">The name of the logging method to resolve.</param>
+        /// <returns>The resolved method when available.</returns>
+        private static MethodInfo ResolveMethod(ref MethodInfo cache, string methodName)
+        {
+            if (cache != null)
+            {
+                return cache;
+            }
+
+            Type debugType = ResolveDebugType();
+            if (debugType != null)
+            {
+                cache = debugType.GetMethod(methodName, BindingFlags.Public | BindingFlags.Static);
+            }
+
+            return cache;
+        }
+
+        /// <summary>
+        /// Invokes the supplied logging method or falls back to Unity diagnostics when unavailable.
+        /// </summary>
+        /// <param name="method">The method resolved via reflection.</param>
+        /// <param name="parameters">The parameters to pass to the logging method.</param>
+        /// <param name="fallback">The fallback logging action when reflection fails.</param>
+        /// <param name="message">The message to log.</param>
+        private static void Invoke(MethodInfo method, object[] parameters, Action<string> fallback, string message)
+        {
+            if (method != null)
+            {
+                try
+                {
+                    method.Invoke(null, parameters);
+                    return;
+                }
+                catch (Exception)
+                {
+                    // Reflection may fail when the runtime assembly is not loaded; fall back to Unity logging.
+                }
+            }
+
+            fallback?.Invoke(message);
+        }
+
+        /// <summary>
+        /// Emits an informational editor log respecting the runtime logging preferences.
+        /// </summary>
+        /// <param name="message">The message to log.</param>
+        public static void LogInfo(string message)
+        {
+            MethodInfo method = ResolveMethod(ref _infoMethod, "LogInfo");
+            Invoke(method, new object[] { message }, m => Debug.Log(m), message);
+        }
+
+        /// <summary>
+        /// Emits a warning editor log respecting the runtime logging preferences.
+        /// </summary>
+        /// <param name="message">The warning message to log.</param>
+        public static void LogWarning(string message)
+        {
+            MethodInfo method = ResolveMethod(ref _warningMethod, "LogWarning");
+            Invoke(method, new object[] { message }, m => Debug.LogWarning(m), message);
+        }
+
+        /// <summary>
+        /// Emits an error editor log respecting the runtime logging preferences.
+        /// </summary>
+        /// <param name="message">The error message to log.</param>
+        public static void LogError(string message)
+        {
+            MethodInfo method = ResolveMethod(ref _errorMethod, "LogError");
+            Invoke(method, new object[] { message }, m => Debug.LogError(m), message);
+        }
+
+        /// <summary>
+        /// Emits a verbose editor log respecting the runtime logging preferences.
+        /// </summary>
+        /// <param name="message">The verbose message to log.</param>
+        public static void LogVerbose(string message)
+        {
+            MethodInfo method = ResolveMethod(ref _verboseMethod, "LogVerbose");
+            Invoke(method, new object[] { message }, m => Debug.Log(m), message);
+        }
+    }
+
     [MenuItem("PlateUp!/Build Asset Bundle _F6")]
+    /// <summary>
+    /// Builds the mod asset bundle while routing progress through the shared debug logging system.
+    /// </summary>
     public static void BuildAssetBundle()
     {
-        Debug.LogFormat("Creating \"{0}\" AssetBundle...", BUNDLE_FILENAME);
+        EditorDebugLogBridge.LogInfo(string.Format("Creating \"{0}\" AssetBundle...", BUNDLE_FILENAME));
 
-		AssetBundler bundler = new AssetBundler();
+        AssetBundler bundler = new AssetBundler();
 
-        if (Application.platform == RuntimePlatform.OSXEditor) bundler.Target = BuildTarget.StandaloneOSX;
+        // Apply the macOS build target when needed so the generated bundle is compatible with the editor.
+        if (Application.platform == RuntimePlatform.OSXEditor)
+        {
+            bundler.Target = BuildTarget.StandaloneOSX;
+        }
 
-        // Randomly generate the resulting name of the asset bundle
+        // Randomly generate the resulting name of the asset bundle.
         bundler.GenerateRandomAssetBundleTag();
 
         bool success = false;
         try
         {
-            // Check for assets
+            // Check for assets and emit warnings when tagging appears incorrect.
             bundler.WarnIfAssetsAreNotTagged();
             bundler.WarnIfZeroAssetsAreTagged();
             bundler.WarnIfMeshAssetsAreTagged();
             // bundler.WarnIfMaterialsAreTaggedOrIncluded();
 
-            // Delete the contents of OUTPUT_FOLDER
+            // Delete the contents of OUTPUT_FOLDER.
             bundler.CleanBuildFolder();
 
-            // Temporarily move the tagged assets to the temporary tag
+            // Temporarily move the tagged assets to the temporary tag.
             bundler.MoveAssetsToTemporaryAssetBundle();
 
-            // Lastly, create the asset bundle itself and copy it to the output folder
+            // Lastly, create the asset bundle itself and copy it to the output folder.
             bundler.CreateAssetBundle();
 
             success = true;
         }
         catch (Exception e)
         {
-            Debug.LogErrorFormat("Failed to build AssetBundle: {0}\n{1}", e.Message, e.StackTrace);
+            EditorDebugLogBridge.LogError(string.Format("Failed to build AssetBundle: {0}\n{1}", e.Message, e.StackTrace));
         }
 
-        // Return assets to the original asset bundle tag
+        // Return assets to the original asset bundle tag.
         bundler.RestoreAssetBundleTags();
         AssetDatabase.RemoveUnusedAssetBundleNames();
 
         if (success)
         {
-            Debug.LogFormat("[{0}] Build complete with {1} warnings! Output: {2} (temporary ID: {3})", DateTime.Now.ToLocalTime(), bundler.NumWarnings, OUTPUT_FOLDER + "/" + BUNDLE_FILENAME, bundler.GeneratedAssetBundleTag);
+            EditorDebugLogBridge.LogInfo(string.Format("[{0}] Build complete with {1} warnings! Output: {2} (temporary ID: {3})",
+                DateTime.Now.ToLocalTime(), bundler.NumWarnings, OUTPUT_FOLDER + "/" + BUNDLE_FILENAME, bundler.GeneratedAssetBundleTag));
         }
     }
 
@@ -100,10 +233,11 @@ public class AssetBundler
     {
         System.Random rand = new System.Random();
         GeneratedAssetBundleTag = $"mod-{rand.Next(0, int.MaxValue)}.assets";
+        EditorDebugLogBridge.LogVerbose($"Generated temporary asset bundle tag {GeneratedAssetBundleTag}.");
     }
 
     /// <summary>
-    /// Move assets tagged with BUNDLE_FILENAME to the temporary asset bundle
+    /// Move assets tagged with BUNDLE_FILENAME to the temporary asset bundle.
     /// </summary>
     private void MoveAssetsToTemporaryAssetBundle()
     {
@@ -111,7 +245,7 @@ public class AssetBundler
     }
 
     /// <summary>
-    /// Move assets tagged with the temporary asset bundle back to BUNDLE_FILENAME
+    /// Move assets tagged with the temporary asset bundle back to BUNDLE_FILENAME.
     /// </summary>
     private void RestoreAssetBundleTags()
     {
@@ -119,19 +253,21 @@ public class AssetBundler
     }
 
     /// <summary>
-    /// Find all assets tagged with a certain asset bundle tag and replace them with another tag
+    /// Find all assets tagged with a certain asset bundle tag and replace them with another tag.
     /// </summary>
-    /// <param name="from">The asset bundle tag to search for</param>
-    /// <param name="to">The new asset bundle tag</param>
+    /// <param name="from">The asset bundle tag to search for.</param>
+    /// <param name="to">The new asset bundle tag.</param>
     private void SubstituteAssetBundleTags(string from, string to)
     {
         string[] assetGUIDs = AssetDatabase.FindAssets($"b:{from}");
         foreach (var assetGUID in assetGUIDs)
         {
             string path = AssetDatabase.GUIDToAssetPath(assetGUID);
-            var importer = AssetImporter.GetAtPath(path);
+            AssetImporter importer = AssetImporter.GetAtPath(path);
             importer.assetBundleName = to;
         }
+
+        EditorDebugLogBridge.LogVerbose(string.Format("Retagged {0} assets from {1} to {2}.", assetGUIDs.Length, from, to));
     }
 
     /// <summary>
@@ -139,8 +275,9 @@ public class AssetBundler
     /// </summary>
     protected void CleanBuildFolder()
     {
-        Debug.LogFormat("Cleaning {0}...", OUTPUT_FOLDER);
+        EditorDebugLogBridge.LogInfo(string.Format("Cleaning {0}...", OUTPUT_FOLDER));
 
+        // Guard: remove the existing output directory to avoid stale bundles.
         if (Directory.Exists(OUTPUT_FOLDER))
         {
             Directory.Delete(OUTPUT_FOLDER, true);
@@ -154,9 +291,9 @@ public class AssetBundler
     /// </summary>
     protected void CreateAssetBundle()
     {
-        Debug.Log("Building AssetBundle...");
+        EditorDebugLogBridge.LogInfo("Building AssetBundle...");
 
-        // Build all AssetBundles to the TEMP_BUILD_FOLDER
+        // Guard: ensure the temporary folder exists before writing bundles to disk.
         if (!Directory.Exists(TEMP_BUILD_FOLDER))
         {
             Directory.CreateDirectory(TEMP_BUILD_FOLDER);
@@ -173,7 +310,7 @@ public class AssetBundler
 #pragma warning restore 618
 
         // We are only interested in the BUNDLE_FILENAME bundle (and not any extra AssetBundle or the manifest files
-        // that Unity makes), so just copy that to the final output folder
+        // that Unity makes), so just copy that to the final output folder.
         string srcPath = Path.Combine(TEMP_BUILD_FOLDER, GeneratedAssetBundleTag);
         string destPath = Path.Combine(OUTPUT_FOLDER, BUNDLE_FILENAME);
         File.Copy(srcPath, destPath, true);
@@ -211,11 +348,10 @@ public class AssetBundler
                 continue;
             }
 
-            var importer = AssetImporter.GetAtPath(path);
+            AssetImporter importer = AssetImporter.GetAtPath(path);
             if (!importer.assetBundleName.Equals(BUNDLE_FILENAME))
             {
-                // Debug.LogWarningFormat("Asset \"{0}\" is not tagged with \"{1}\" and will not be included in the AssetBundle!", path, BUNDLE_FILENAME);
-                // ++NumWarnings;
+                // Future enhancement: emit warnings when assets are skipped from the bundle build.
             }
         }
     }
@@ -228,7 +364,7 @@ public class AssetBundler
         string[] assetsInBundle = AssetDatabase.FindAssets($"{ASSET_SEARCH_QUERY},b:{BUNDLE_FILENAME}");
         if (assetsInBundle.Length == 0)
         {
-            // throw new Exception(string.Format("No assets have been tagged for inclusion in the {0} AssetBundle.", BUNDLE_FILENAME));
+            // Future enhancement: throw when no assets are tagged to avoid distributing empty bundles.
         }
     }
 
@@ -246,7 +382,7 @@ public class AssetBundler
                 continue;
             }
 
-            Debug.LogWarningFormat("Mesh asset \"{0}\" is tagged for inclusion in the {1} AssetBundle! This is likely a mistake. You should include a prefab instead.", path, BUNDLE_FILENAME);
+            EditorDebugLogBridge.LogWarning(string.Format("Mesh asset \"{0}\" is tagged for inclusion in the {1} AssetBundle! This is likely a mistake. You should include a prefab instead.", path, BUNDLE_FILENAME));
             ++NumWarnings;
         }
     }
@@ -256,7 +392,7 @@ public class AssetBundler
     /// </summary>
     protected void WarnIfMaterialsAreTaggedOrIncluded()
     {
-        // Check for directly tagged materials
+        // Check for directly tagged materials.
         string[] assetGUIDs = AssetDatabase.FindAssets($"t:material,b:{BUNDLE_FILENAME}");
         foreach (var assetGUID in assetGUIDs)
         {
@@ -266,11 +402,11 @@ public class AssetBundler
                 continue;
             }
 
-            Debug.LogWarningFormat("Material asset \"{0}\" is tagged for inclusion in the {1} AssetBundle! This is likely a mistake. You should use generate materials using the vanilla shaders instead.", path, BUNDLE_FILENAME);
+            EditorDebugLogBridge.LogWarning(string.Format("Material asset \"{0}\" is tagged for inclusion in the {1} AssetBundle! This is likely a mistake. You should use generate materials using the vanilla shaders instead.", path, BUNDLE_FILENAME));
             ++NumWarnings;
         }
 
-        // Check for materials assigned to prefabs
+        // Check for materials assigned to prefabs.
         assetGUIDs = AssetDatabase.FindAssets($"t:prefab,b:{BUNDLE_FILENAME}");
         foreach (var assetGUID in assetGUIDs)
         {
@@ -286,21 +422,32 @@ public class AssetBundler
             {
                 if (renderer.sharedMaterials.Any(m => m != null))
                 {
-                    Debug.LogWarningFormat("Material found attached to bundle prefab in \"{0}\" at \"<root>/{1}\"! This is likely a mistake. To avoid log spam and texturing issues, you should remove these materials or set them to \"None\".", path, GetGameObjectPath(renderer.transform).Split(new char[] { '/' }, 3)[2]);
+                    EditorDebugLogBridge.LogWarning(string.Format("Material found attached to bundle prefab in \"{0}\" at \"<root>/{1}\"! This is likely a mistake. To avoid log spam and texturing issues, you should remove these materials or set them to \"None\".", path, GetGameObjectPath(renderer.transform).Split(new char[] { '/' }, 3)[2]));
                     ++NumWarnings;
                 }
             }
         }
     }
 
+    /// <summary>
+    /// Computes the hierarchical path to a Unity transform for diagnostic output.
+    /// </summary>
+    /// <param name="current">The transform to trace.</param>
+    /// <returns>The slash delimited path for the transform.</returns>
     public static string GetGameObjectPath(Transform current)
     {
         if (current.parent == null)
+        {
             return "/" + current.name;
+        }
+
         return GetGameObjectPath(current.parent) + "/" + current.name;
     }
 
     [MenuItem("PlateUp!/Preparation/[Deprecated] Strip Materials From Prefabs")]
+    /// <summary>
+    /// Removes all materials from prefabs tagged for the bundle after explicit user confirmation.
+    /// </summary>
     public static void RemoveAllPrefabMaterials()
     {
         if (!EditorUtility.DisplayDialog("Confirm", "Stripping materials from prefabs is an irreversible process. Perform at your own risk.", "Proceed", "Cancel"))
@@ -324,17 +471,18 @@ public class AssetBundler
                 if (renderer.sharedMaterials.Length > 0)
                 {
                     renderer.sharedMaterials = new Material[renderer.sharedMaterials.Length];
-                    Debug.LogFormat("Stripped materials from \"{0}\" at \"<root>/{1}\".", path, GetGameObjectPath(renderer.transform).Split(new char[] { '/' }, 3)[2]);
+                    EditorDebugLogBridge.LogInfo(string.Format("Stripped materials from \"{0}\" at \"<root>/{1}\".", path, GetGameObjectPath(renderer.transform).Split(new char[] { '/' }, 3)[2]));
                 }
             }
         }
 
-        Debug.LogFormat("[{0}] Done stripping materials.", DateTime.Now.ToLocalTime());
+        EditorDebugLogBridge.LogInfo(string.Format("[{0}] Done stripping materials.", DateTime.Now.ToLocalTime()));
     }
 
-
-
     [MenuItem("PlateUp!/Preparation/[Deprecated] Set Prefab Materials to Default")]
+    /// <summary>
+    /// Replaces all bundle prefab materials with Unity's default material after explicit user confirmation.
+    /// </summary>
     public static void SetAllPrefabMaterialsToDefault()
     {
         if (!EditorUtility.DisplayDialog("Confirm", "Changing the materials of prefabs is an irreversible process. Perform at your own risk.", "Proceed", "Cancel"))
@@ -359,7 +507,7 @@ public class AssetBundler
             {
                 if (renderer.sharedMaterials.Length > 0)
                 {
-                    var newMaterials = new Material[renderer.sharedMaterials.Length];
+                    Material[] newMaterials = new Material[renderer.sharedMaterials.Length];
 
                     for (int i = 0; i < newMaterials.Length; i++)
                     {
@@ -368,11 +516,11 @@ public class AssetBundler
 
                     renderer.sharedMaterials = newMaterials;
 
-                    Debug.LogFormat("Set materials from \"{0}\" at \"<root>/{1}\".", path, GetGameObjectPath(renderer.transform).Split(new char[] { '/' }, 3)[2]);
+                    EditorDebugLogBridge.LogInfo(string.Format("Set materials from \"{0}\" at \"<root>/{1}\".", path, GetGameObjectPath(renderer.transform).Split(new char[] { '/' }, 3)[2]));
                 }
             }
         }
 
-        Debug.LogFormat("[{0}] Done setting materials.", DateTime.Now.ToLocalTime());
+        EditorDebugLogBridge.LogInfo(string.Format("[{0}] Done setting materials.", DateTime.Now.ToLocalTime()));
     }
 }

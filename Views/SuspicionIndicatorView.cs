@@ -218,8 +218,18 @@ namespace KitchenMysteryMeat.Views
             [Key(1)] public float TotalTime;
             [Key(2)] public float RemainingTime;
 
+            /// <summary>
+            /// Locates the suspicion indicator view tied to this payload.
+            /// </summary>
+            /// <param name="view">The owning object view.</param>
+            /// <returns>The matching suspicion indicator subview.</returns>
             public IUpdatableObject GetRelevantSubview(IObjectView view) => view.GetSubView<SuspicionIndicatorView>();
 
+            /// <summary>
+            /// Detects changes in indicator timing or type to decide if a render refresh is required.
+            /// </summary>
+            /// <param name="check">The previous view data to compare.</param>
+            /// <returns>True when an update is needed.</returns>
             public bool IsChangedFrom(ViewData check) => check.IndicatorType != IndicatorType || check.RemainingTime != RemainingTime || check.TotalTime != TotalTime;
         }
 
@@ -229,6 +239,7 @@ namespace KitchenMysteryMeat.Views
         /// <returns>The effective suspicion volume multiplier.</returns>
         private static float ResolveSuspicionVolumeMultiplier()
         {
+            // Guard: default to full volume when the preference manager is unavailable.
             if (Mod.PrefManager == null)
             {
                 return 1.0f;

@@ -38,12 +38,14 @@ namespace KitchenMysteryMeat.Views
         /// </summary>
         protected override void UpdateData(MeatGrinderView.ViewData data)
         {
+            // Guard: skip updates when the hold point transform cannot be located.
             if (HoldPoint == null)
             {
                 DebugLogSystem.LogWarning("Meat grinder view missing hold point transform; skipping update.");
                 return;
             }
 
+            // Route the hold position according to whether an input item is present.
             if (data.HasGrindableItem)
             {
                 HoldPoint.transform.localPosition = data.GrinderInputPosition;
@@ -108,8 +110,18 @@ namespace KitchenMysteryMeat.Views
             [Key(2)] public Vector3 GrinderInputPosition;
             [Key(3)] public Vector3 GrinderOutputPosition;
 
+            /// <summary>
+            /// Retrieves the grinder view that should receive updates for this payload.
+            /// </summary>
+            /// <param name="view">The object view used to locate the subview.</param>
+            /// <returns>The grinder subview bound to the entity.</returns>
             public IUpdatableObject GetRelevantSubview(IObjectView view) => view.GetSubView<MeatGrinderView>();
 
+            /// <summary>
+            /// Detects whether the view data has changed to prevent redundant updates.
+            /// </summary>
+            /// <param name="check">The previous view data to compare against.</param>
+            /// <returns>True when the data differs and the view requires refreshing.</returns>
             public bool IsChangedFrom(ViewData check) => check.HasGrindableItem != HasGrindableItem || check.ProcessProgress != ProcessProgress;
         }
     }

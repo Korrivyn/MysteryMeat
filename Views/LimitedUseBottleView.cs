@@ -36,12 +36,14 @@ namespace KitchenMysteryMeat.Views
         /// </summary>
         protected override void UpdateData(LimitedUseBottleView.ViewData data)
         {
+            // Guard: ensure all required render references are present before mutating materials.
             if (!Mesh || !BottleMaterial || !LiquidMaterial)
             {
                 DebugLogSystem.LogWarning("Limited-use bottle view is missing mesh or material references and cannot update visuals.");
                 return;
             }
 
+            // Guard: skip updates when default view data is received.
             if (data.Equals(default(ViewData)))
             {
                 DebugLogSystem.LogVerbose("Received default view data; skipping limited-use bottle update.");
@@ -53,6 +55,7 @@ namespace KitchenMysteryMeat.Views
             for (int i = 0; i < renderer.materials.Length; i++)
             {
                 Material desiredMaterial = BottleMaterial;
+                // Apply the liquid material when the slot falls within the fill range.
                 if (i < data.FillAmount)
                 {
                     desiredMaterial = LiquidMaterial;
@@ -106,8 +109,18 @@ namespace KitchenMysteryMeat.Views
             [Key(0)] public int Limit;
             [Key(1)] public int FillAmount;
 
+            /// <summary>
+            /// Locates the limited-use bottle view for this payload.
+            /// </summary>
+            /// <param name="view">The parent object view.</param>
+            /// <returns>The limited-use bottle subview.</returns>
             public IUpdatableObject GetRelevantSubview(IObjectView view) => view.GetSubView<LimitedUseBottleView>();
 
+            /// <summary>
+            /// Determines whether the bottle limit or fill amount changed between updates.
+            /// </summary>
+            /// <param name="check">The previous view data.</param>
+            /// <returns>True when a refresh is required.</returns>
             public bool IsChangedFrom(ViewData check) => check.Limit != Limit || check.FillAmount != FillAmount;
         }
     }
