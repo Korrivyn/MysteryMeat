@@ -1,13 +1,11 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Identifies items that should be processed by grinder appliances or processes.
+    /// </summary>
     public struct CGrindable : IModComponent, IAttachableProperty, IItemProperty
     {
     }

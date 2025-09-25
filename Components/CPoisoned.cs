@@ -1,13 +1,11 @@
-﻿using KitchenData;
+using KitchenData;
 using KitchenMods;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace KitchenMysteryMeat.Components
 {
+    /// <summary>
+    /// Marks entities that have been poisoned so downstream systems can handle delayed kills or reactions.
+    /// </summary>
     public struct CPoisoned : IModComponent, IItemProperty, IAttachableProperty
     {
     }
