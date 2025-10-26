@@ -49,7 +49,7 @@ namespace KitchenMysteryMeat.Systems
             EntityContext ctx = new EntityContext(EntityManager);
 
             // Announce the number of slain customers being processed to aid situational awareness.
-            DebugLogSystem.LogVerbose($"[KillCustomers] Processing {_customers.Length} murdered customers.");
+            DebugLogSystem.LogVerbose($"Processing {_customers.Length} murdered customers.");
 
             // Iterate through each dead customer to orchestrate cleanup and corpse creation.
             for (int i = 0; i < _customers.Length; i++)
@@ -60,21 +60,21 @@ namespace KitchenMysteryMeat.Systems
                 CKilled cKilled = EntityManager.GetComponentData<CKilled>(customer);
 
                 // Provide breadcrumbs for each customer so verbose logs expose bloody state.
-                DebugLogSystem.LogVerbose($"[KillCustomers] Handling customer {customer.Index} (bloody: {cKilled.Bloody}).");
+                DebugLogSystem.LogVerbose($"Handling customer {customer.Index} (bloody: {cKilled.Bloody}).");
 
                 CreateCorpse(ctx, customerPosition, cKilled.Bloody);
 
                 // Ensure the customer still references a dining group before attempting removal.
                 if (!Require(customer, out CBelongsToGroup belongsToGroup))
                 {
-                    DebugLogSystem.LogWarning($"[KillCustomers] Customer {customer.Index} missing CBelongsToGroup; skipping group cleanup.");
+                    DebugLogSystem.LogWarning($"Customer {customer.Index} missing CBelongsToGroup; skipping group cleanup.");
                     continue;
                 }
 
                 // Confirm the dining group exposes its member buffer so we can excise the victim.
                 if (!RequireBuffer(belongsToGroup.Group, out DynamicBuffer<CGroupMember> groupMembers))
                 {
-                    DebugLogSystem.LogWarning($"[KillCustomers] Group {belongsToGroup.Group.Index} missing CGroupMember buffer for customer {customer.Index}.");
+                    DebugLogSystem.LogWarning($"Group {belongsToGroup.Group.Index} missing CGroupMember buffer for customer {customer.Index}.");
                     continue;
                 }
 
@@ -106,7 +106,7 @@ namespace KitchenMysteryMeat.Systems
                 }
                 else
                 {
-                    DebugLogSystem.LogWarning($"[KillCustomers] Group {belongsToGroup.Group.Index} missing CWaitingForItem buffer; orders may remain for customer {customer.Index}.");
+                    DebugLogSystem.LogWarning($"Group {belongsToGroup.Group.Index} missing CWaitingForItem buffer; orders may remain for customer {customer.Index}.");
                 }
             }
 
@@ -135,7 +135,7 @@ namespace KitchenMysteryMeat.Systems
             // Skip gore generation when the victim was clean.
             if (!bloody)
             {
-                DebugLogSystem.LogVerbose("[KillCustomers] Corpse spawned without blood spills.");
+                DebugLogSystem.LogVerbose("Corpse spawned without blood spills.");
                 return;
             }
 
@@ -165,7 +165,7 @@ namespace KitchenMysteryMeat.Systems
             }
 
             // Record how many spills were produced to help diagnose performance impact.
-            DebugLogSystem.LogVerbose($"[KillCustomers] Generated {spillsCreated} blood spills for corpse at {cPosition.Position}.");
+            DebugLogSystem.LogVerbose($"Generated {spillsCreated} blood spills for corpse at {cPosition.Position}.");
         }
     }
 }

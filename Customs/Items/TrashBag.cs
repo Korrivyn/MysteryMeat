@@ -6,6 +6,7 @@ using KitchenLib.Utils;
 using KitchenMysteryMeat.Components;
 using KitchenMysteryMeat.Customs.Appliances;
 using KitchenMysteryMeat.Views;
+using KitchenMysteryMeat.Systems.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,11 +36,15 @@ namespace KitchenMysteryMeat.Customs.Items
                 Capacity = 1
             },
         };
+        /// <summary>
+        /// Attaches the trash bag view when the item is registered.
+        /// </summary>
         public override void OnRegister(Item gameDataObject)
         {
             base.OnRegister(gameDataObject);
 
             TrashBagView view = Prefab.AddComponent<TrashBagView>();
+            DebugLogSystem.LogVerbose("Attached trash bag view component during registration.");
         }
     }
 }

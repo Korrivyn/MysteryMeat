@@ -12,6 +12,9 @@ using UnityEngine.UI;
 
 namespace KitchenMysteryMeat.Views
 {
+    /// <summary>
+    /// Presents suspicion and alert indicators above customers based on linked ECS data and preferences.
+    /// </summary>
     public class SuspicionIndicatorView : UpdatableObjectView<SuspicionIndicatorView.ViewData>
     {
         public GameObject Canvas;
@@ -54,7 +57,7 @@ namespace KitchenMysteryMeat.Views
             {
                 if (!_missingPreferenceWarningLogged)
                 {
-                    DebugLogSystem.LogVerbose("Mystery Meat deferred suspicion indicator preference lookups because preferences are not initialised.");
+                    DebugLogSystem.LogVerbose("Deferred suspicion indicator preference lookups because preferences are not initialised.");
                     _missingPreferenceWarningLogged = true;
                 }
             }
@@ -169,6 +172,9 @@ namespace KitchenMysteryMeat.Views
             transform.rotation = Quaternion.identity;
         }
 
+        /// <summary>
+        /// Drives suspicion indicator view updates from ECS component changes.
+        /// </summary>
         public class UpdateView : IncrementalViewSystemBase<ViewData>, IModSystem
         {
             private EntityQuery query;

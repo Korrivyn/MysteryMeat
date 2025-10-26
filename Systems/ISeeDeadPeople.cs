@@ -10,14 +10,21 @@ using Unity.Entities;
 using UnityEngine.UI;
 using UnityEngine;
 using KitchenMysteryMeat.Components;
+using KitchenMysteryMeat.Systems.Logging;
 
 namespace KitchenMysteryMeat.Systems
 {
+    /// <summary>
+    /// Monitors customers and flags them as suspicious when they observe illegal sights within their room.
+    /// </summary>
     public class ISeeDeadPeople : GenericSystemBase, IModSystem
     {
         EntityQuery Customers;
         EntityQuery IllegalEntities;
 
+        /// <summary>
+        /// Builds queries for customers and illegal sight entities to support suspicion updates.
+        /// </summary>
         protected override void Initialise()
         {
             base.Initialise();
@@ -32,6 +39,9 @@ namespace KitchenMysteryMeat.Systems
                             .All(typeof(CIllegalSight)));
         }
 
+        /// <summary>
+        /// Updates customer suspicion references based on line-of-sight checks against illegal entities.
+        /// </summary>
         protected override void OnUpdate()
         {
             using NativeArray<Entity> _customers = Customers.ToEntityArray(Allocator.Temp);
@@ -43,14 +53,16 @@ namespace KitchenMysteryMeat.Systems
                 CPosition customerPosition = GetComponent<CPosition>(customer);
                 CSuspicionIndicator cSuspicionIndicator = GetComponent<CSuspicionIndicator>(customer);
 
-
                 foreach (Entity illegalEntity in _illegalEntities)
                 {
                     CPosition illegalEntityPos;
                     if (!Require<CPosition>(illegalEntity, out illegalEntityPos))
                     {
                         if (Require<CHeldBy>(illegalEntity, out CHeldBy cHeldBy) && !Require<CPosition>(cHeldBy.Holder, out illegalEntityPos))
+                        {
+                            DebugLogSystem.LogWarning($"Could not resolve position for held illegal entity {illegalEntity.Index}.");
                             continue;
+                        }
                     }
 
                     // Checking if illegal entity is in customer's view
@@ -66,6 +78,7 @@ namespace KitchenMysteryMeat.Systems
                             // Run away!
                             cSuspicionIndicator.SeenIllegalThing = illegalEntity;
                             EntityManager.SetComponentData<CSuspicionIndicator>(customer, cSuspicionIndicator);
+                            DebugLogSystem.LogVerbose($"Flagged customer {customer.Index} after spotting illegal entity {illegalEntity.Index}.");
                             continue;
                         }
                     }
@@ -74,6 +87,7 @@ namespace KitchenMysteryMeat.Systems
                     {
                         cSuspicionIndicator.SeenIllegalThing = null;
                         EntityManager.SetComponentData<CSuspicionIndicator>(customer, cSuspicionIndicator);
+                        DebugLogSystem.LogVerbose($"Cleared illegal sight reference for customer {customer.Index}.");
                     }
 
                 }
